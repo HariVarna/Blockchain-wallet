@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Web3 Ethereum Wallet</title>
+  <meta name="description" content="Secure, modern Ethereum Wallet manager for key generation, balance checking, and transactions.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome & QR Code Lib -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- Ethers.js v6 UMD CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"></script>
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background glow mesh -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-glow bg-glow-3"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+
+    <!-- Top Navigation Header -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-cube"></i>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Apex Wallet</span>
+          <span class="brand-badge">Ethereum Web3</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Network Selector -->
+        <div class="network-select-wrapper">
+          <i class="fa-solid fa-network-wired network-icon"></i>
+          <select id="network-select" class="network-select">
+            <option value="sepolia">Sepolia Testnet</option>
+            <option value="mainnet">Ethereum Mainnet</option>
+            <option value="polygon">Polygon Mainnet</option>
+            <option value="arbitrum">Arbitrum One</option>
+          </select>
+        </div>
+
+        <!-- Connection Status Badge -->
+        <div class="status-badge" id="status-badge">
+          <span class="status-dot online"></span>
+          <span id="status-text">Connected (Sepolia)</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-dashboard">
+        <i class="fa-solid fa-chart-pie"></i> Dashboard & Balance
+      </button>
+      <button class="tab-btn" data-tab="tab-create">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Create Wallet
+      </button>
+      <button class="tab-btn" data-tab="tab-import">
+        <i class="fa-solid fa-file-import"></i> Import Wallet
+      </button>
+      <button class="tab-btn" data-tab="tab-send">
+        <i class="fa-solid fa-paper-plane"></i> Send ETH
+      </button>
+      <button class="tab-btn" data-tab="tab-history">
+        <i class="fa-solid fa-clock-rotate-left"></i> History
+      </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+
+      <!-- TAB 1: DASHBOARD & BALANCE -->
+      <section id="tab-dashboard" class="tab-content active">
+        <div class="dashboard-grid">
+          
+          <!-- Primary Glass Wallet Card -->
+          <div class="card glass-card wallet-card">
+            <div class="card-chip">
+              <div class="chip-graphic"></div>
+              <span class="card-network-tag" id="card-network-name">Sepolia Testnet</span>
+            </div>
+
+            <div class="wallet-balance-section">
+              <span class="balance-label">Total Balance</span>
+              <div class="balance-amount-row">
+                <h1 class="balance-eth" id="dash-eth-balance">0.0000 <span class="eth-unit">ETH</span></h1>
+                <button class="icon-btn refresh-btn" id="btn-refresh-balance" title="Refresh Balance">
+                  <i class="fa-solid fa-rotate-right"></i>
+                </button>
+              </div>
+              <div class="balance-usd" id="dash-usd-balance">≈ $0.00 USD</div>
+            </div>
+
+            <div class="wallet-address-section">
+              <span class="address-label">Active Wallet Address</span>
+              <div class="address-box">
+                <span class="mono-text" id="dash-wallet-address">No Wallet Active</span>
+                <button class="copy-btn" id="btn-copy-dash-address" title="Copy Address">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+                <button class="copy-btn" id="btn-qr-modal" title="View QR Code">
+                  <i class="fa-solid fa-qrcode"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions & Stats Side Panel -->
+          <div class="side-panel-grid">
+            <!-- Quick Stat: Network Gas -->
+            <div class="card glass-card stat-card">
+              <div class="stat-icon gas-icon"><i class="fa-solid fa-gas-pump"></i></div>
+              <div class="stat-info">
+                <span class="stat-title">Gas Price</span>
+                <span class="stat-value" id="dash-gas-price">-- Gwei</span>
+              </div>
+            </div>
+
+            <!-- Quick Stat: Block Height -->
+            <div class="card glass-card stat-card">
+              <div class="stat-icon block-icon"><i class="fa-solid fa-cubes"></i></div>
+              <div class="stat-info">
+                <span class="stat-title">Latest Block</span>
+                <span class="stat-value" id="dash-latest-block">--</span>
+              </div>
+            </div>
+
+            <!-- Quick Action Card -->
+            <div class="card glass-card quick-action-card">
+              <h3>Quick Actions</h3>
+              <div class="quick-action-buttons">
+                <button class="btn btn-primary" id="btn-quick-send">
+                  <i class="fa-solid fa-paper-plane"></i> Transfer ETH
+                </button>
+                <button class="btn btn-secondary" id="btn-quick-create">
+                  <i class="fa-solid fa-plus"></i> Generate New Wallet
+                </button>
+                <button class="btn btn-secondary" id="btn-download-json" disabled>
+                  <i class="fa-solid fa-download"></i> Export wallet.json
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 2: CREATE WALLET -->
+      <section id="tab-create" class="tab-content">
+        <div class="card glass-card section-card">
+          <div class="section-header">
+            <div>
+              <h2>Generate New Ethereum Wallet</h2>
+              <p class="section-desc">Create an HD (Hierarchical Deterministic) wallet compliant with BIP-39 / BIP-44 standards.</p>
+            </div>
+            <button class="btn btn-accent btn-lg" id="btn-generate-wallet">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate New Wallet
+            </button>
+          </div>
+
+          <div id="generated-wallet-display" class="wallet-results-box hidden">
+            <div class="alert alert-info">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span><strong>Security Reminder:</strong> Never share your Private Key or Mnemonic Seed Phrase with anyone. Store them securely offline.</span>
+            </div>
+
+            <!-- Generated Address -->
+            <div class="form-group">
+              <label>Public Address</label>
+              <div class="input-with-actions">
+                <input type="text" id="gen-address" class="input-field mono-text" readonly autocomplete="off">
+                <button class="btn btn-secondary" id="btn-copy-gen-address">
+                  <i class="fa-regular fa-copy"></i> Copy
+                </button>
+              </div>
+            </div>
+
+            <!-- Generated Mnemonic Seed Phrase -->
+            <div class="form-group">
+              <div class="label-with-action">
+                <label>12-Word Mnemonic Seed Phrase</label>
+                <button class="btn-link" id="btn-copy-mnemonic">
+                  <i class="fa-regular fa-copy"></i> Copy Phrase
+                </button>
+              </div>
+              <div class="mnemonic-grid" id="mnemonic-words-container">
+                <!-- 12 word cards rendered via JS -->
+              </div>
+            </div>
+
+            <!-- Generated Private Key -->
+            <div class="form-group">
+              <div class="label-with-action">
+                <label>Private Key</label>
+                <button class="btn-link" id="btn-toggle-privkey">
+                  <i class="fa-solid fa-eye" id="eye-icon"></i> <span id="eye-text">Show Private Key</span>
+                </button>
+              </div>
+              <div class="input-with-actions">
+                <input type="password" id="gen-privkey" class="input-field mono-text" readonly autocomplete="off">
+                <button class="btn btn-secondary" id="btn-copy-gen-privkey">
+                  <i class="fa-regular fa-copy"></i> Copy
+                </button>
+              </div>
+            </div>
+
+            <!-- Action Buttons for Export -->
+            <div class="actions-row">
+              <button class="btn btn-primary" id="btn-use-generated">
+                <i class="fa-solid fa-circle-check"></i> Set as Active Wallet
+              </button>
+              <button class="btn btn-secondary" id="btn-export-gen-json">
+                <i class="fa-solid fa-file-arrow-down"></i> Save to wallet.json
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: IMPORT WALLET -->
+      <section id="tab-import" class="tab-content">
+        <div class="card glass-card section-card">
+          <div class="section-header">
+            <div>
+              <h2>Import Existing Wallet</h2>
+              <p class="section-desc">Load an existing Ethereum wallet using your Private Key, 12-Word Seed Phrase, or wallet.json file.</p>
+            </div>
+          </div>
+
+          <!-- Import Method Sub-Tabs -->
+          <div class="sub-tabs">
+            <button class="sub-tab-btn active" data-subtab="import-privkey">Private Key</button>
+            <button class="sub-tab-btn" data-subtab="import-mnemonic">Mnemonic Phrase</button>
+            <button class="sub-tab-btn" data-subtab="import-file">Upload wallet.json</button>
+          </div>
+
+          <!-- Import Subtab 1: Private Key -->
+          <div id="import-privkey" class="subtab-content active">
+            <div class="form-group">
+              <label for="input-import-privkey">Enter Private Key (64 hex characters / 0x prefixed)</label>
+              <input type="password" id="input-import-privkey" class="input-field mono-text" placeholder="0x3f17ded2369347d8909cbbb880489661abcaad607f967163..." autocomplete="off">
+            </div>
+            <button class="btn btn-primary" id="btn-submit-import-privkey">
+              <i class="fa-solid fa-key"></i> Import via Private Key
+            </button>
+          </div>
+
+          <!-- Import Subtab 2: Mnemonic -->
+          <div id="import-mnemonic" class="subtab-content">
+            <div class="form-group">
+              <label for="input-import-mnemonic">Enter 12 or 24 Word Seed Phrase</label>
+              <textarea id="input-import-mnemonic" class="input-field textarea-field mono-text" rows="3" placeholder="gather child gold beach fire regret trade canoe saddle mammal crane oxygen"></textarea>
+            </div>
+            <button class="btn btn-primary" id="btn-submit-import-mnemonic">
+              <i class="fa-solid fa-list-ol"></i> Import via Seed Phrase
+            </button>
+          </div>
+
+          <!-- Import Subtab 3: JSON File -->
+          <div id="import-file" class="subtab-content">
+            <div class="dropzone" id="file-dropzone">
+              <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+              <p>Drag & Drop your <code>wallet.json</code> here or click to browse</p>
+              <input type="file" id="file-input" accept=".json" class="hidden-file-input">
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 4: SEND TRANSACTION -->
+      <section id="tab-send" class="tab-content">
+        <div class="card glass-card section-card">
+          <div class="section-header">
+            <div>
+              <h2>Send Ethereum (ETH)</h2>
+              <p class="section-desc">Transfer native ETH to any valid Ethereum address on the connected network.</p>
+            </div>
+            <div class="active-wallet-pill">
+              <span>Active Sender:</span>
+              <strong id="send-sender-address" class="mono-text">No Wallet Active</strong>
+            </div>
+          </div>
+
+          <form id="form-send-eth" onsubmit="return false;">
+            <!-- Recipient Input -->
+            <div class="form-group">
+              <label for="send-recipient">Recipient Address</label>
+              <input type="text" id="send-recipient" class="input-field mono-text" placeholder="0x0000000000000000000000000000000000000000" autocomplete="off">
+              <span class="field-hint" id="recipient-hint">Must be a valid 42-character 0x Ethereum address</span>
+            </div>
+
+            <!-- Amount Input -->
+            <div class="form-group">
+              <div class="label-with-action">
+                <label for="send-amount">Amount (ETH)</label>
+                <span class="available-balance">Available: <strong id="send-available-eth">0.0000 ETH</strong></span>
+              </div>
+              <div class="amount-input-wrapper">
+                <input type="number" id="send-amount" class="input-field" step="0.0001" min="0" placeholder="0.00" autocomplete="off">
+                <span class="currency-tag">ETH</span>
+              </div>
+
+              <!-- Quick Percent Buttons -->
+              <div class="percent-buttons">
+                <button type="button" class="btn-chip" data-percent="0.25">25%</button>
+                <button type="button" class="btn-chip" data-percent="0.50">50%</button>
+                <button type="button" class="btn-chip" data-percent="0.75">75%</button>
+                <button type="button" class="btn-chip" data-percent="1.00">Max</button>
+              </div>
+            </div>
+
+            <!-- Transaction Summary & Fee Estimation -->
+            <div class="tx-summary-box">
+              <div class="summary-row">
+                <span>Estimated Gas Fee:</span>
+                <strong id="tx-estimated-gas">~ 0.000021 ETH</strong>
+              </div>
+              <div class="summary-row">
+                <span>Network:</span>
+                <strong id="tx-network-display">Sepolia Testnet</strong>
+              </div>
+              <div class="summary-row total-row">
+                <span>Total Deducted:</span>
+                <strong id="tx-total-amount">0.0000 ETH</strong>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-lg btn-block" id="btn-send-tx">
+                <i class="fa-solid fa-paper-plane"></i> Confirm & Send Transaction
+              </button>
+              <button type="button" class="btn btn-secondary btn-lg btn-block" id="btn-simulate-tx">
+                <i class="fa-solid fa-vial"></i> Test Mode (Simulate Transfer)
+              </button>
+            </div>
+          </form>
+
+          <!-- Transaction Result Modal/Box -->
+          <div id="tx-result-box" class="tx-result-box hidden">
+            <div class="result-header">
+              <i class="fa-solid fa-circle-check success-icon"></i>
+              <div>
+                <h3>Transaction Broadcasted Successfully!</h3>
+                <p>Your transaction has been submitted to the network queue.</p>
+              </div>
+            </div>
+            <div class="result-details">
+              <div class="detail-item">
+                <span>Transaction Hash:</span>
+                <a id="tx-hash-link" href="#" target="_blank" class="mono-text link-text">0x...</a>
+              </div>
+              <div class="detail-item">
+                <span>Block Explorer:</span>
+                <a id="tx-explorer-link" href="#" target="_blank" class="btn-link">View on Etherscan <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 5: TRANSACTION HISTORY -->
+      <section id="tab-history" class="tab-content">
+        <div class="card glass-card section-card">
+          <div class="section-header">
+            <div>
+              <h2>Transaction Activity</h2>
+              <p class="section-desc">Record of transactions broadcasted or simulated in this session.</p>
+            </div>
+            <button class="btn btn-secondary" id="btn-clear-history">
+              <i class="fa-solid fa-trash-can"></i> Clear Log
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Hash / ID</th>
+                  <th>Recipient</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                <tr id="empty-history-row">
+                  <td colspan="6" class="text-center empty-cell">
+                    <i class="fa-solid fa-inbox empty-icon"></i>
+                    <p>No transaction history recorded yet.</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- QR Code Modal -->
+  <div id="qr-modal" class="modal-overlay hidden">
+    <div class="modal-content glass-card">
+      <div class="modal-header">
+        <h3>Wallet Address QR Code</h3>
+        <button class="modal-close" id="btn-close-qr-modal">&times;</button>
+      </div>
+      <div class="modal-body text-center">
+        <div id="qrcode-container" class="qrcode-wrapper"></div>
+        <p class="mono-text modal-address-text" id="modal-qr-address"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
