@@ -1,0 +1,12 @@
+{
+  "name": "wallet-creation",
+  "version": "1.0.0",
+  "description": "Ethereum wallet creation script",
+  "main": "wallet.js",
+  "scripts": {
+    "start": "node wallet.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
