@@ -1,439 +1,933 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Apex Web3 Ethereum Wallet</title>
-  <meta name="description" content="Secure, modern Ethereum Wallet manager for key generation, balance checking, and transactions.">
-  
-  <!-- Google Fonts -->
+  <title>Apex Wallet</title>
+  <meta name="description" content="A secure, feature-rich Ethereum wallet inspired by MetaMask.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- FontAwesome & QR Code Lib -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-  <!-- Ethers.js v6 UMD CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"></script>
-  
+  <script src="tokens.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Ambient background glow mesh -->
-  <div class="bg-glow bg-glow-1"></div>
-  <div class="bg-glow bg-glow-2"></div>
-  <div class="bg-glow bg-glow-3"></div>
+<div id="toast-container"></div>
+<div class="mm-shell">
+  <div class="mm-app" id="mm-app">
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container"></div>
-
-  <!-- App Wrapper -->
-  <div class="app-container">
-
-    <!-- Top Navigation Header -->
-    <header class="navbar">
-      <div class="brand">
-        <div class="brand-icon">
-          <i class="fa-solid fa-cube"></i>
-        </div>
-        <div class="brand-text">
-          <span class="brand-name">Apex Wallet</span>
-          <span class="brand-badge">Ethereum Web3</span>
-        </div>
+    <!-- ===== HEADER ===== -->
+    <header class="mm-header">
+      <div class="mm-header-logo">
+        <svg viewBox="0 0 35 33" class="mm-fox-logo" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32.956 1l-13.14 9.728 2.443-5.79L32.956 1z" fill="#E2761B" stroke="#E2761B" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2.044 1l13.03 9.82-2.332-5.882L2.044 1z" fill="#E4761B" stroke="#E4761B" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M28.19 23.42l-3.498 5.345 7.48 2.06 2.147-7.282-6.128-.122z" fill="#E4761B" stroke="#E4761B" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M.69 23.543l2.136 7.282 7.47-2.06-3.488-5.344-6.118.122z" fill="#E4761B" stroke="#E4761B" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9.88 14.78l-2.088 3.159 7.44.33-.256-7.99L9.88 14.78z" fill="#E4761B" stroke="#E4761B" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M25.12 14.78l-5.147-4.6-.168 8.09 7.428-.33-2.112-3.16z" fill="#E4761B" stroke="#E4761B" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10.296 28.765l4.47-2.17-3.853-3.002-.617 5.172z" fill="#E4761B" stroke="#E4761B" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20.234 26.595l4.458 2.17-.605-5.172-3.853 3.002z" fill="#E4761B" stroke="#E4761B" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M24.692 28.765l-4.458-2.17.358 2.914-.04 1.24 4.14-1.984z" fill="#D7C1B3" stroke="#D7C1B3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10.296 28.765l4.14 1.984-.03-1.24.346-2.914-4.456 2.17z" fill="#D7C1B3" stroke="#D7C1B3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20.508 18.27l.408-7.384 1.855-5.018h-8.252l1.856 5.018.408 7.384.14 2.049.01 5.95h3.42l.021-5.95.134-2.049z" fill="#F6851B" stroke="#F6851B" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
-
-      <div class="header-actions">
-        <!-- Network Selector -->
-        <div class="network-select-wrapper">
-          <i class="fa-solid fa-network-wired network-icon"></i>
-          <select id="network-select" class="network-select">
-            <option value="sepolia">Sepolia Testnet</option>
-            <option value="mainnet">Ethereum Mainnet</option>
-            <option value="polygon">Polygon Mainnet</option>
-            <option value="arbitrum">Arbitrum One</option>
-          </select>
-        </div>
-
-        <!-- Connection Status Badge -->
-        <div class="status-badge" id="status-badge">
-          <span class="status-dot online"></span>
-          <span id="status-text">Connected (Sepolia)</span>
-        </div>
+      <div class="mm-network-pill" id="mm-network-pill">
+        <span class="mm-network-dot" id="mm-network-dot"></span>
+        <select id="network-select" class="mm-network-select">
+          <option value="sepolia">Ethereum Sepolia</option>
+          <option value="mainnet">Ethereum Mainnet</option>
+          <option value="polygon">Polygon</option>
+          <option value="arbitrum">Arbitrum One</option>
+          <option value="optimism">Optimism</option>
+          <option value="base">Base</option>
+          <option value="bsc">BNB Chain</option>
+          <option value="avalanche">Avalanche</option>
+        </select>
+        <i class="fa-solid fa-chevron-down mm-network-chevron"></i>
+      </div>
+      <div class="mm-header-right">
+        <button class="mm-notif-btn" id="btn-open-notifications" title="Notifications" data-nav-view="view-notifications">
+          <i class="fa-solid fa-bell"></i>
+          <span class="mm-notif-badge hidden" id="notif-badge">0</span>
+        </button>
+        <button class="mm-account-pill" id="btn-active-account" title="Switch Account">
+          <div class="mm-account-jazzicon" id="header-account-avatar"></div>
+        </button>
+        <button class="mm-options-btn" id="btn-options-menu" title="More Options">
+          <i class="fa-solid fa-ellipsis-vertical"></i>
+        </button>
+        <span id="status-text" class="hidden"></span>
+        <div id="status-badge" class="hidden"></div>
       </div>
     </header>
 
-    <!-- Main Navigation Tabs -->
-    <nav class="nav-tabs">
-      <button class="tab-btn active" data-tab="tab-dashboard">
-        <i class="fa-solid fa-chart-pie"></i> Dashboard & Balance
-      </button>
-      <button class="tab-btn" data-tab="tab-create">
-        <i class="fa-solid fa-wand-magic-sparkles"></i> Create Wallet
-      </button>
-      <button class="tab-btn" data-tab="tab-import">
-        <i class="fa-solid fa-file-import"></i> Import Wallet
-      </button>
-      <button class="tab-btn" data-tab="tab-send">
-        <i class="fa-solid fa-paper-plane"></i> Send ETH
-      </button>
-      <button class="tab-btn" data-tab="tab-history">
-        <i class="fa-solid fa-clock-rotate-left"></i> History
-      </button>
-    </nav>
+    <!-- ===== OPTIONS DROPDOWN ===== -->
+    <div class="mm-dropdown-menu hidden" id="options-dropdown">
+      <button class="mm-dropdown-item" id="opt-account-details"><i class="fa-solid fa-id-card"></i> Account Details</button>
+      <button class="mm-dropdown-item" id="opt-view-explorer"><i class="fa-solid fa-arrow-up-right-from-square"></i> View on Explorer</button>
+      <div class="mm-dropdown-divider"></div>
+      <button class="mm-dropdown-item" id="opt-create-wallet"><i class="fa-solid fa-plus"></i> Create New Wallet</button>
+      <button class="mm-dropdown-item" id="opt-import-wallet"><i class="fa-solid fa-file-import"></i> Import Wallet</button>
+      <div class="mm-dropdown-divider"></div>
+      <button class="mm-dropdown-item" id="opt-settings"><i class="fa-solid fa-gear"></i> Settings</button>
+      <div class="mm-dropdown-divider"></div>
+      <button class="mm-dropdown-item danger" id="opt-lock-wallet"><i class="fa-solid fa-lock"></i> Lock Wallet</button>
+    </div>
 
-    <!-- Main Content Area -->
-    <main class="content-area">
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="mm-content" id="mm-content">
 
-      <!-- TAB 1: DASHBOARD & BALANCE -->
-      <section id="tab-dashboard" class="tab-content active">
-        <div class="dashboard-grid">
-          
-          <!-- Primary Glass Wallet Card -->
-          <div class="card glass-card wallet-card">
-            <div class="card-chip">
-              <div class="chip-graphic"></div>
-              <span class="card-network-tag" id="card-network-name">Sepolia Testnet</span>
-            </div>
-
-            <div class="wallet-balance-section">
-              <span class="balance-label">Total Balance</span>
-              <div class="balance-amount-row">
-                <h1 class="balance-eth" id="dash-eth-balance">0.0000 <span class="eth-unit">ETH</span></h1>
-                <button class="icon-btn refresh-btn" id="btn-refresh-balance" title="Refresh Balance">
-                  <i class="fa-solid fa-rotate-right"></i>
-                </button>
-              </div>
-              <div class="balance-usd" id="dash-usd-balance">≈ $0.00 USD</div>
-            </div>
-
-            <div class="wallet-address-section">
-              <span class="address-label">Active Wallet Address</span>
-              <div class="address-box">
-                <span class="mono-text" id="dash-wallet-address">No Wallet Active</span>
-                <button class="copy-btn" id="btn-copy-dash-address" title="Copy Address">
-                  <i class="fa-regular fa-copy"></i>
-                </button>
-                <button class="copy-btn" id="btn-qr-modal" title="View QR Code">
-                  <i class="fa-solid fa-qrcode"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quick Actions & Stats Side Panel -->
-          <div class="side-panel-grid">
-            <!-- Quick Stat: Network Gas -->
-            <div class="card glass-card stat-card">
-              <div class="stat-icon gas-icon"><i class="fa-solid fa-gas-pump"></i></div>
-              <div class="stat-info">
-                <span class="stat-title">Gas Price</span>
-                <span class="stat-value" id="dash-gas-price">-- Gwei</span>
-              </div>
-            </div>
-
-            <!-- Quick Stat: Block Height -->
-            <div class="card glass-card stat-card">
-              <div class="stat-icon block-icon"><i class="fa-solid fa-cubes"></i></div>
-              <div class="stat-info">
-                <span class="stat-title">Latest Block</span>
-                <span class="stat-value" id="dash-latest-block">--</span>
-              </div>
-            </div>
-
-            <!-- Quick Action Card -->
-            <div class="card glass-card quick-action-card">
-              <h3>Quick Actions</h3>
-              <div class="quick-action-buttons">
-                <button class="btn btn-primary" id="btn-quick-send">
-                  <i class="fa-solid fa-paper-plane"></i> Transfer ETH
-                </button>
-                <button class="btn btn-secondary" id="btn-quick-create">
-                  <i class="fa-solid fa-plus"></i> Generate New Wallet
-                </button>
-                <button class="btn btn-secondary" id="btn-download-json" disabled>
-                  <i class="fa-solid fa-download"></i> Export wallet.json
-                </button>
-              </div>
-            </div>
-          </div>
-
+      <!-- ==================== VIEW: HOME ==================== -->
+      <section class="mm-view active" id="view-home">
+        <div class="mm-account-row">
+          <button class="mm-account-name-btn" id="btn-account-name-copy">
+            <span class="mm-account-name-label" id="mm-account-name-label">Account 1</span>
+            <i class="fa-regular fa-copy mm-copy-icon"></i>
+          </button>
         </div>
-      </section>
+        <div class="mm-balance-section">
+          <div class="mm-eth-balance" id="dash-eth-balance">0.0000</div>
+          <div class="mm-balance-unit">ETH</div>
+          <div class="mm-usd-balance" id="dash-usd-balance">$0.00 USD</div>
+        </div>
+        <div class="mm-actions-row">
+          <div class="mm-action-item">
+            <button class="mm-action-circle" id="btn-action-buy"><i class="fa-solid fa-credit-card"></i></button>
+            <span class="mm-action-label">Buy</span>
+          </div>
+          <div class="mm-action-item">
+            <button class="mm-action-circle primary" id="btn-action-send"><i class="fa-solid fa-arrow-up"></i></button>
+            <span class="mm-action-label">Send</span>
+          </div>
+          <div class="mm-action-item">
+            <button class="mm-action-circle" id="btn-action-swap"><i class="fa-solid fa-arrows-rotate"></i></button>
+            <span class="mm-action-label">Swap</span>
+          </div>
+          <div class="mm-action-item">
+            <button class="mm-action-circle" id="btn-action-bridge"><i class="fa-solid fa-bridge"></i></button>
+            <span class="mm-action-label">Bridge</span>
+          </div>
+          <div class="mm-action-item">
+            <button class="mm-action-circle" id="btn-action-receive"><i class="fa-solid fa-arrow-down"></i></button>
+            <span class="mm-action-label">Receive</span>
+          </div>
+        </div>
+        <div class="mm-asset-tabs">
+          <button class="mm-asset-tab active" data-asset-tab="tokens">Tokens</button>
+          <button class="mm-asset-tab" data-asset-tab="nfts">NFTs</button>
+          <button class="mm-asset-tab" data-asset-tab="activity">Activity</button>
+        </div>
 
-      <!-- TAB 2: CREATE WALLET -->
-      <section id="tab-create" class="tab-content">
-        <div class="card glass-card section-card">
-          <div class="section-header">
-            <div>
-              <h2>Generate New Ethereum Wallet</h2>
-              <p class="section-desc">Create an HD (Hierarchical Deterministic) wallet compliant with BIP-39 / BIP-44 standards.</p>
+        <!-- Tokens Panel -->
+        <div class="mm-asset-panel active" id="asset-panel-tokens">
+          <div class="mm-tokens-toolbar">
+            <div class="mm-search-wrap">
+              <i class="fa-solid fa-magnifying-glass mm-search-icon"></i>
+              <input type="text" id="token-search-input" class="mm-search-input" placeholder="Search tokens...">
             </div>
-            <button class="btn btn-accent btn-lg" id="btn-generate-wallet">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate New Wallet
+            <div class="mm-tokens-toolbar-right">
+              <button class="mm-icon-btn" id="btn-token-sort" title="Sort">
+                <i class="fa-solid fa-arrow-up-wide-short"></i>
+              </button>
+              <button class="mm-icon-btn" id="btn-toggle-hide-zero" title="Hide zero balances">
+                <i class="fa-solid fa-eye" id="hide-zero-icon"></i>
+              </button>
+            </div>
+          </div>
+          <div class="mm-token-list" id="token-list-container">
+            <!-- ETH native token -->
+            <div class="mm-token-item" id="mm-eth-token-row">
+              <div class="mm-token-logo eth-logo">
+                <svg viewBox="0 0 784 1277" xmlns="http://www.w3.org/2000/svg"><path d="M392.07 0L383.5 28.67V844.47L392.07 853.04L784.13 619.42L392.07 0Z" fill="#343434"/><path d="M392.07 0L0 619.42L392.07 853.04V456.63V0Z" fill="#8C8C8C"/><path d="M392.07 928.43L387.25 934.35V1226.12L392.07 1277L784.37 694.84L392.07 928.43Z" fill="#3C3C3B"/><path d="M392.07 1277V928.43L0 694.84L392.07 1277Z" fill="#8C8C8C"/><path d="M392.07 853.04L784.13 619.42L392.07 456.63V853.04Z" fill="#141414"/><path d="M0 619.42L392.07 853.04V456.63L0 619.42Z" fill="#393939"/></svg>
+              </div>
+              <div class="mm-token-info">
+                <div class="mm-token-name">Ethereum</div>
+                <div class="mm-token-amount"><span id="token-eth-amount">0.0000</span> ETH</div>
+                <div class="mm-token-eth-price" id="eth-price-ticker">Loading price...</div>
+              </div>
+              <div class="mm-token-value">
+                <div class="mm-token-usd" id="token-eth-usd">$0.00</div>
+                <div class="mm-token-change neutral">0.00%</div>
+              </div>
+            </div>
+            <!-- ERC-20 tokens rendered here by JS -->
+            <div id="erc20-token-list"></div>
+            <!-- Skeleton loaders (hidden by default) -->
+            <div id="token-skeleton" class="hidden">
+              <div class="mm-skeleton-row"><div class="mm-skel mm-skel-circle"></div><div class="mm-skel-lines"><div class="mm-skel mm-skel-line w-60"></div><div class="mm-skel mm-skel-line w-40"></div></div><div class="mm-skel-val"><div class="mm-skel mm-skel-line w-50"></div></div></div>
+              <div class="mm-skeleton-row"><div class="mm-skel mm-skel-circle"></div><div class="mm-skel-lines"><div class="mm-skel mm-skel-line w-70"></div><div class="mm-skel mm-skel-line w-30"></div></div><div class="mm-skel-val"><div class="mm-skel mm-skel-line w-50"></div></div></div>
+            </div>
+          </div>
+          <div class="mm-token-footer">
+            <div class="mm-network-stats-bar">
+              <span><i class="fa-solid fa-gas-pump"></i> <span id="dash-gas-price">—</span> Gwei</span>
+              <span><i class="fa-solid fa-cube"></i> <span id="dash-latest-block">—</span></span>
+              <span class="mm-price-badge" id="mm-eth-price-badge"><i class="fa-brands fa-ethereum"></i> <span id="mm-eth-price-live">—</span></span>
+              <button class="mm-refresh-btn" id="btn-refresh-balance" title="Refresh"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+            <button class="mm-import-token-btn" id="btn-open-import-token">
+              <i class="fa-solid fa-plus"></i> Import token
             </button>
           </div>
+        </div>
 
-          <div id="generated-wallet-display" class="wallet-results-box hidden">
-            <div class="alert alert-info">
-              <i class="fa-solid fa-shield-halved"></i>
-              <span><strong>Security Reminder:</strong> Never share your Private Key or Mnemonic Seed Phrase with anyone. Store them securely offline.</span>
+        <!-- NFTs Panel -->
+        <div class="mm-asset-panel" id="asset-panel-nfts">
+          <div class="mm-empty-state"><div class="mm-empty-icon"><i class="fa-solid fa-image"></i></div><p>No NFTs to display</p><small>NFTs received will appear here</small></div>
+        </div>
+
+        <!-- Activity Panel (mini) -->
+        <div class="mm-asset-panel" id="asset-panel-activity">
+          <div class="mm-activity-list" id="mm-activity-list">
+            <div class="mm-empty-state" id="mm-activity-empty">
+              <div class="mm-empty-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+              <p>No transactions yet</p>
+              <small>Your activity will appear here</small>
             </div>
-
-            <!-- Generated Address -->
-            <div class="form-group">
-              <label>Public Address</label>
-              <div class="input-with-actions">
-                <input type="text" id="gen-address" class="input-field mono-text" readonly autocomplete="off">
-                <button class="btn btn-secondary" id="btn-copy-gen-address">
-                  <i class="fa-regular fa-copy"></i> Copy
-                </button>
-              </div>
-            </div>
-
-            <!-- Generated Mnemonic Seed Phrase -->
-            <div class="form-group">
-              <div class="label-with-action">
-                <label>12-Word Mnemonic Seed Phrase</label>
-                <button class="btn-link" id="btn-copy-mnemonic">
-                  <i class="fa-regular fa-copy"></i> Copy Phrase
-                </button>
-              </div>
-              <div class="mnemonic-grid" id="mnemonic-words-container">
-                <!-- 12 word cards rendered via JS -->
-              </div>
-            </div>
-
-            <!-- Generated Private Key -->
-            <div class="form-group">
-              <div class="label-with-action">
-                <label>Private Key</label>
-                <button class="btn-link" id="btn-toggle-privkey">
-                  <i class="fa-solid fa-eye" id="eye-icon"></i> <span id="eye-text">Show Private Key</span>
-                </button>
-              </div>
-              <div class="input-with-actions">
-                <input type="password" id="gen-privkey" class="input-field mono-text" readonly autocomplete="off">
-                <button class="btn btn-secondary" id="btn-copy-gen-privkey">
-                  <i class="fa-regular fa-copy"></i> Copy
-                </button>
-              </div>
-            </div>
-
-            <!-- Action Buttons for Export -->
-            <div class="actions-row">
-              <button class="btn btn-primary" id="btn-use-generated">
-                <i class="fa-solid fa-circle-check"></i> Set as Active Wallet
-              </button>
-              <button class="btn btn-secondary" id="btn-export-gen-json">
-                <i class="fa-solid fa-file-arrow-down"></i> Save to wallet.json
-              </button>
-            </div>
-
+          </div>
+          <div style="padding:8px 16px;">
+            <button class="mm-btn mm-btn-ghost full-width" data-nav-view="view-activity">
+              <i class="fa-solid fa-list"></i> View All Activity
+            </button>
           </div>
         </div>
       </section>
 
-      <!-- TAB 3: IMPORT WALLET -->
-      <section id="tab-import" class="tab-content">
-        <div class="card glass-card section-card">
-          <div class="section-header">
-            <div>
-              <h2>Import Existing Wallet</h2>
-              <p class="section-desc">Load an existing Ethereum wallet using your Private Key, 12-Word Seed Phrase, or wallet.json file.</p>
+      <!-- ==================== VIEW: SEND ==================== -->
+      <section class="mm-view" id="view-send">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Send</h2><div></div>
+        </div>
+        <div class="mm-view-body">
+          <div class="mm-form-group">
+            <label>From</label>
+            <div class="mm-from-field">
+              <div class="mm-from-avatar" id="send-from-avatar"></div>
+              <div><div class="mm-from-name" id="send-from-name">Account 1</div><div class="mm-from-addr" id="send-sender-address">—</div></div>
             </div>
           </div>
-
-          <!-- Import Method Sub-Tabs -->
-          <div class="sub-tabs">
-            <button class="sub-tab-btn active" data-subtab="import-privkey">Private Key</button>
-            <button class="sub-tab-btn" data-subtab="import-mnemonic">Mnemonic Phrase</button>
-            <button class="sub-tab-btn" data-subtab="import-file">Upload wallet.json</button>
-          </div>
-
-          <!-- Import Subtab 1: Private Key -->
-          <div id="import-privkey" class="subtab-content active">
-            <div class="form-group">
-              <label for="input-import-privkey">Enter Private Key (64 hex characters / 0x prefixed)</label>
-              <input type="password" id="input-import-privkey" class="input-field mono-text" placeholder="0x3f17ded2369347d8909cbbb880489661abcaad607f967163..." autocomplete="off">
-            </div>
-            <button class="btn btn-primary" id="btn-submit-import-privkey">
-              <i class="fa-solid fa-key"></i> Import via Private Key
-            </button>
-          </div>
-
-          <!-- Import Subtab 2: Mnemonic -->
-          <div id="import-mnemonic" class="subtab-content">
-            <div class="form-group">
-              <label for="input-import-mnemonic">Enter 12 or 24 Word Seed Phrase</label>
-              <textarea id="input-import-mnemonic" class="input-field textarea-field mono-text" rows="3" placeholder="gather child gold beach fire regret trade canoe saddle mammal crane oxygen"></textarea>
-            </div>
-            <button class="btn btn-primary" id="btn-submit-import-mnemonic">
-              <i class="fa-solid fa-list-ol"></i> Import via Seed Phrase
-            </button>
-          </div>
-
-          <!-- Import Subtab 3: JSON File -->
-          <div id="import-file" class="subtab-content">
-            <div class="dropzone" id="file-dropzone">
-              <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
-              <p>Drag & Drop your <code>wallet.json</code> here or click to browse</p>
-              <input type="file" id="file-input" accept=".json" class="hidden-file-input">
+          <div class="mm-form-group">
+            <label for="send-recipient">To</label>
+            <div class="mm-autocomplete-wrap">
+              <input type="text" id="send-recipient" class="mm-input" placeholder="0x address, ENS, or contact name" autocomplete="off">
+              <div class="mm-autocomplete-list hidden" id="send-autocomplete"></div>
             </div>
           </div>
-
+          <div class="mm-form-group">
+            <label>Amount</label>
+            <div class="mm-amount-input-wrap">
+              <input type="number" id="send-amount" class="mm-input mm-amount-input" placeholder="0" min="0" step="any">
+              <div class="mm-amount-currency"><span>ETH</span></div>
+            </div>
+            <div class="mm-amount-row">
+              <span class="mm-available-label">Available: <span id="send-available-eth">0.0000</span> ETH</span>
+              <button class="mm-max-btn" id="btn-send-max">Max</button>
+            </div>
+            <div class="mm-percent-row">
+              <button class="mm-pct-btn" data-percent="0.25">25%</button>
+              <button class="mm-pct-btn" data-percent="0.5">50%</button>
+              <button class="mm-pct-btn" data-percent="0.75">75%</button>
+              <button class="mm-pct-btn" data-percent="1">Max</button>
+            </div>
+          </div>
+          <div class="mm-gas-details">
+            <div class="mm-gas-row"><span><i class="fa-solid fa-gas-pump"></i> Gas fee</span><span id="tx-estimated-gas">~0.0001 ETH</span></div>
+            <div class="mm-gas-row"><span>Total</span><span id="tx-total-amount">0.0000 ETH</span></div>
+            <div class="mm-gas-row"><span>Network</span><span id="tx-network-display">Sepolia</span></div>
+          </div>
+          <div class="mm-tx-result hidden" id="tx-result-box">
+            <i class="fa-solid fa-circle-check mm-success-icon"></i>
+            <p>Transaction sent!</p>
+            <a id="tx-hash-link" href="#" target="_blank" class="mm-tx-link">View on Explorer</a>
+          </div>
+        </div>
+        <div class="mm-view-footer">
+          <button class="mm-btn mm-btn-ghost" id="btn-simulate-tx">Simulate</button>
+          <button class="mm-btn mm-btn-primary" id="btn-send-tx"><i class="fa-solid fa-paper-plane"></i> Confirm</button>
         </div>
       </section>
 
-      <!-- TAB 4: SEND TRANSACTION -->
-      <section id="tab-send" class="tab-content">
-        <div class="card glass-card section-card">
-          <div class="section-header">
-            <div>
-              <h2>Send Ethereum (ETH)</h2>
-              <p class="section-desc">Transfer native ETH to any valid Ethereum address on the connected network.</p>
+      <!-- ==================== VIEW: SWAP ==================== -->
+      <section class="mm-view" id="view-swap">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Swap</h2><div></div>
+        </div>
+        <div class="mm-view-body">
+          <div class="mm-swap-box">
+            <label>From</label>
+            <div class="mm-swap-field">
+              <div class="mm-swap-token-picker"><div class="mm-token-logo eth-logo sm"><svg viewBox="0 0 784 1277"><path d="M392.07 0L383.5 28.67V844.47L392.07 853.04L784.13 619.42L392.07 0Z" fill="#343434"/><path d="M392.07 0L0 619.42L392.07 853.04V456.63V0Z" fill="#8C8C8C"/></svg></div><span>ETH</span><i class="fa-solid fa-chevron-down"></i></div>
+              <input type="number" class="mm-swap-amount" placeholder="0" id="swap-from-amount">
             </div>
-            <div class="active-wallet-pill">
-              <span>Active Sender:</span>
-              <strong id="send-sender-address" class="mono-text">No Wallet Active</strong>
+            <div class="mm-swap-balance">Balance: <span id="swap-eth-balance">0.0000</span> ETH</div>
+          </div>
+          <div class="mm-swap-arrow-btn" id="btn-swap-flip"><i class="fa-solid fa-arrow-down-up-across-line"></i></div>
+          <div class="mm-swap-box">
+            <label>To</label>
+            <div class="mm-swap-field">
+              <div class="mm-swap-token-picker"><span>Select token</span><i class="fa-solid fa-chevron-down"></i></div>
+              <input type="number" class="mm-swap-amount" placeholder="0" id="swap-to-amount" disabled>
             </div>
           </div>
+          <div class="mm-swap-info"><i class="fa-solid fa-circle-info"></i><span>Best rate from aggregated DEX routes (Testnet: simulated)</span></div>
+          <button class="mm-btn mm-btn-primary full-width" id="btn-do-swap">Swap Tokens</button>
+        </div>
+      </section>
 
-          <form id="form-send-eth" onsubmit="return false;">
-            <!-- Recipient Input -->
-            <div class="form-group">
-              <label for="send-recipient">Recipient Address</label>
-              <input type="text" id="send-recipient" class="input-field mono-text" placeholder="0x0000000000000000000000000000000000000000" autocomplete="off">
-              <span class="field-hint" id="recipient-hint">Must be a valid 42-character 0x Ethereum address</span>
-            </div>
+      <!-- ==================== VIEW: BRIDGE ==================== -->
+      <section class="mm-view" id="view-bridge">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Bridge</h2><div></div>
+        </div>
+        <div class="mm-view-body">
+          <div class="mm-bridge-chain-row">
+            <div class="mm-bridge-chain-box"><label>From</label><select class="mm-select" id="bridge-from-chain"><option>Ethereum Sepolia</option><option>Ethereum Mainnet</option><option>Polygon</option></select></div>
+            <div class="mm-bridge-arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
+            <div class="mm-bridge-chain-box"><label>To</label><select class="mm-select" id="bridge-to-chain"><option>Polygon</option><option>Arbitrum One</option><option>Optimism</option><option>Base</option></select></div>
+          </div>
+          <div class="mm-form-group"><label>Amount</label><div class="mm-amount-input-wrap"><input type="number" class="mm-input" placeholder="0.00" id="bridge-amount"><div class="mm-amount-currency">ETH</div></div></div>
+          <div class="mm-swap-info"><i class="fa-solid fa-circle-info"></i><span>Bridging requires network fees. Assets may take 5–30 minutes.</span></div>
+          <button class="mm-btn mm-btn-primary full-width" id="btn-do-bridge">Review Bridge</button>
+        </div>
+      </section>
 
-            <!-- Amount Input -->
-            <div class="form-group">
-              <div class="label-with-action">
-                <label for="send-amount">Amount (ETH)</label>
-                <span class="available-balance">Available: <strong id="send-available-eth">0.0000 ETH</strong></span>
-              </div>
-              <div class="amount-input-wrapper">
-                <input type="number" id="send-amount" class="input-field" step="0.0001" min="0" placeholder="0.00" autocomplete="off">
-                <span class="currency-tag">ETH</span>
-              </div>
+      <!-- ==================== VIEW: BUY ==================== -->
+      <section class="mm-view" id="view-buy">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Buy Crypto</h2><div></div>
+        </div>
+        <div class="mm-view-body">
+          <div class="mm-buy-options">
+            <div class="mm-buy-option-card"><i class="fa-solid fa-credit-card"></i><div><div class="mm-buy-provider">Card / Bank Transfer</div><div class="mm-buy-desc">Buy ETH with fiat via Ramp, MoonPay, Transak</div></div><i class="fa-solid fa-chevron-right"></i></div>
+            <div class="mm-buy-option-card"><i class="fa-solid fa-faucet"></i><div><div class="mm-buy-provider">Testnet Faucet</div><div class="mm-buy-desc">Get free Sepolia ETH for testing</div></div><a href="https://sepoliafaucet.com" target="_blank" class="mm-link-btn">Get ETH →</a></div>
+          </div>
+        </div>
+      </section>
 
-              <!-- Quick Percent Buttons -->
-              <div class="percent-buttons">
-                <button type="button" class="btn-chip" data-percent="0.25">25%</button>
-                <button type="button" class="btn-chip" data-percent="0.50">50%</button>
-                <button type="button" class="btn-chip" data-percent="0.75">75%</button>
-                <button type="button" class="btn-chip" data-percent="1.00">Max</button>
-              </div>
-            </div>
-
-            <!-- Transaction Summary & Fee Estimation -->
-            <div class="tx-summary-box">
-              <div class="summary-row">
-                <span>Estimated Gas Fee:</span>
-                <strong id="tx-estimated-gas">~ 0.000021 ETH</strong>
-              </div>
-              <div class="summary-row">
-                <span>Network:</span>
-                <strong id="tx-network-display">Sepolia Testnet</strong>
-              </div>
-              <div class="summary-row total-row">
-                <span>Total Deducted:</span>
-                <strong id="tx-total-amount">0.0000 ETH</strong>
-              </div>
-            </div>
-
-            <!-- Submit Button -->
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary btn-lg btn-block" id="btn-send-tx">
-                <i class="fa-solid fa-paper-plane"></i> Confirm & Send Transaction
-              </button>
-              <button type="button" class="btn btn-secondary btn-lg btn-block" id="btn-simulate-tx">
-                <i class="fa-solid fa-vial"></i> Test Mode (Simulate Transfer)
-              </button>
-            </div>
-          </form>
-
-          <!-- Transaction Result Modal/Box -->
-          <div id="tx-result-box" class="tx-result-box hidden">
-            <div class="result-header">
-              <i class="fa-solid fa-circle-check success-icon"></i>
+      <!-- ==================== VIEW: RECEIVE (Enhanced) ==================== -->
+      <section class="mm-view" id="view-receive">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Receive</h2><div></div>
+        </div>
+        <div class="mm-view-body mm-receive-body">
+          <div class="mm-receive-card">
+            <div class="mm-receive-account-row">
+              <div class="mm-receive-avatar" id="receive-avatar"></div>
               <div>
-                <h3>Transaction Broadcasted Successfully!</h3>
-                <p>Your transaction has been submitted to the network queue.</p>
+                <div class="mm-receive-acc-name" id="receive-acc-name">Account 1</div>
+                <div class="mm-receive-network" id="receive-network-name">Ethereum Sepolia</div>
               </div>
             </div>
-            <div class="result-details">
-              <div class="detail-item">
-                <span>Transaction Hash:</span>
-                <a id="tx-hash-link" href="#" target="_blank" class="mono-text link-text">0x...</a>
-              </div>
-              <div class="detail-item">
-                <span>Block Explorer:</span>
-                <a id="tx-explorer-link" href="#" target="_blank" class="btn-link">View on Etherscan <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-              </div>
+            <div class="mm-qr-container" id="qrcode-container"></div>
+            <div class="mm-address-box">
+              <span class="mm-mono-addr" id="dash-wallet-address">—</span>
+              <button class="mm-icon-btn" id="btn-copy-dash-address" title="Copy address"><i class="fa-regular fa-copy"></i></button>
+            </div>
+            <div class="mm-receive-actions">
+              <button class="mm-receive-action-btn" id="btn-share-address">
+                <i class="fa-solid fa-share-nodes"></i><span>Share</span>
+              </button>
+              <button class="mm-receive-action-btn" id="btn-download-qr">
+                <i class="fa-solid fa-download"></i><span>Download QR</span>
+              </button>
             </div>
           </div>
-
+          <div class="mm-receive-recents">
+            <div class="mm-section-title">Recent Receives</div>
+            <div id="receive-recent-list">
+              <div class="mm-empty-state" style="padding:20px;"><div class="mm-empty-icon"><i class="fa-solid fa-inbox"></i></div><p>No incoming transactions</p></div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- TAB 5: TRANSACTION HISTORY -->
-      <section id="tab-history" class="tab-content">
-        <div class="card glass-card section-card">
-          <div class="section-header">
-            <div>
-              <h2>Transaction Activity</h2>
-              <p class="section-desc">Record of transactions broadcasted or simulated in this session.</p>
+      <!-- ==================== VIEW: CREATE WALLET ==================== -->
+      <section class="mm-view" id="view-create">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Create Wallet</h2><div></div>
+        </div>
+        <div class="mm-view-body">
+          <div class="mm-info-box"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Generate a new 12-word Secret Recovery Phrase and Ethereum address.</span></div>
+          <button class="mm-btn mm-btn-primary full-width" id="btn-generate-wallet"><i class="fa-solid fa-plus"></i> Create a new wallet</button>
+          <div id="generated-wallet-display" class="mm-wallet-result hidden">
+            <div class="mm-result-section"><label>Wallet Address</label><div class="mm-result-field"><span id="gen-address" class="mm-mono-sm"></span><button class="mm-icon-btn" id="btn-copy-gen-address"><i class="fa-regular fa-copy"></i></button></div></div>
+            <div class="mm-result-section">
+              <label>Secret Recovery Phrase</label>
+              <div class="mm-srp-warning"><i class="fa-solid fa-triangle-exclamation"></i> Never share your secret phrase!</div>
+              <div class="mm-mnemonic-grid" id="mnemonic-words-container"></div>
+              <button class="mm-icon-text-btn" id="btn-copy-mnemonic"><i class="fa-regular fa-copy"></i> Copy phrase</button>
             </div>
-            <button class="btn btn-secondary" id="btn-clear-history">
-              <i class="fa-solid fa-trash-can"></i> Clear Log
-            </button>
+            <div class="mm-result-section">
+              <label>Private Key</label>
+              <div class="mm-result-field">
+                <span id="gen-privkey" class="mm-mono-sm privkey-masked">••••••••••••••••••••••••••••••••</span>
+                <button class="mm-icon-btn" id="btn-toggle-privkey"><i id="eye-icon" class="fa-regular fa-eye"></i></button>
+                <button class="mm-icon-btn" id="btn-copy-gen-privkey"><i class="fa-regular fa-copy"></i></button>
+              </div>
+              <span id="eye-text" class="hidden"></span>
+            </div>
+            <div class="mm-result-actions">
+              <button class="mm-btn mm-btn-primary" id="btn-use-generated"><i class="fa-solid fa-wallet"></i> Use This Wallet</button>
+              <button class="mm-btn mm-btn-ghost" id="btn-export-gen-json"><i class="fa-solid fa-download"></i> Export JSON</button>
+            </div>
           </div>
+        </div>
+      </section>
 
-          <div class="table-responsive">
-            <table class="history-table">
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Hash / ID</th>
-                  <th>Recipient</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Time</th>
-                </tr>
-              </thead>
-              <tbody id="history-table-body">
-                <tr id="empty-history-row">
-                  <td colspan="6" class="text-center empty-cell">
-                    <i class="fa-solid fa-inbox empty-icon"></i>
-                    <p>No transaction history recorded yet.</p>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+      <!-- ==================== VIEW: IMPORT WALLET ==================== -->
+      <section class="mm-view" id="view-import">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Import Wallet</h2><div></div>
+        </div>
+        <div class="mm-view-body">
+          <div class="mm-card"><div class="mm-card-header"><i class="fa-solid fa-key"></i><span>Secret Recovery Phrase</span></div><div class="mm-form-group"><label for="input-import-mnemonic">Enter your 12 or 24 word phrase</label><textarea id="input-import-mnemonic" class="mm-input mm-textarea" placeholder="Word 1, Word 2, Word 3..." rows="3"></textarea></div><button class="mm-btn mm-btn-primary full-width" id="btn-submit-import-mnemonic">Import</button></div>
+          <div class="mm-card"><div class="mm-card-header"><i class="fa-solid fa-lock"></i><span>Private Key</span></div><div class="mm-form-group"><label for="input-import-privkey">Paste your private key</label><input type="password" id="input-import-privkey" class="mm-input" placeholder="0x..." autocomplete="off"></div><button class="mm-btn mm-btn-primary full-width" id="btn-submit-import-privkey">Import</button></div>
+          <div class="mm-card"><div class="mm-card-header"><i class="fa-solid fa-file-code"></i><span>Keystore JSON</span></div><div id="file-dropzone" class="mm-dropzone"><input type="file" id="file-input" accept=".json" class="hidden"><i class="fa-solid fa-upload"></i><p>Drop JSON file here or <span class="mm-link-btn">browse</span></p></div></div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: ACTIVITY (Full) ==================== -->
+      <section class="mm-view" id="view-activity">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Activity</h2>
+          <button class="mm-icon-btn" id="btn-activity-filter-reset" title="Clear filters"><i class="fa-solid fa-filter-circle-xmark"></i></button>
+        </div>
+        <div class="mm-view-search-bar">
+          <div class="mm-search-wrap">
+            <i class="fa-solid fa-magnifying-glass mm-search-icon"></i>
+            <input type="text" id="activity-search" class="mm-search-input" placeholder="Search transactions...">
+          </div>
+        </div>
+        <div class="mm-filter-chips" id="activity-filter-chips">
+          <button class="mm-chip active" data-activity-filter="all">All</button>
+          <button class="mm-chip" data-activity-filter="send">Sent</button>
+          <button class="mm-chip" data-activity-filter="receive">Received</button>
+          <button class="mm-chip" data-activity-filter="pending">Pending</button>
+          <button class="mm-chip" data-activity-filter="failed">Failed</button>
+        </div>
+        <div class="mm-activity-timeline" id="full-activity-list">
+          <div class="mm-empty-state" id="activity-full-empty">
+            <div class="mm-empty-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <p>No transactions</p><small>Send or receive ETH to see history</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: NETWORKS ==================== -->
+      <section class="mm-view" id="view-networks">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Networks</h2>
+          <button class="mm-icon-btn" id="btn-open-add-network"><i class="fa-solid fa-plus"></i></button>
+        </div>
+        <div class="mm-view-body" style="gap:0;padding:0;">
+          <div class="mm-network-list" id="network-list-container"></div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: NOTIFICATIONS ==================== -->
+      <section class="mm-view" id="view-notifications">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Notifications</h2>
+          <button class="mm-icon-btn" id="btn-clear-all-notifs" title="Clear all"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+        <div class="mm-notif-actions">
+          <button class="mm-link-btn" id="btn-mark-all-read">Mark all as read</button>
+        </div>
+        <div class="mm-notification-list" id="notification-list">
+          <div class="mm-empty-state" id="notif-empty-state">
+            <div class="mm-empty-icon"><i class="fa-regular fa-bell-slash"></i></div>
+            <p>No notifications</p><small>Alerts about your wallet will appear here</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: CONTACTS ==================== -->
+      <section class="mm-view" id="view-contacts">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-settings-hub"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Contacts</h2>
+          <button class="mm-icon-btn" id="btn-open-add-contact"><i class="fa-solid fa-plus"></i></button>
+        </div>
+        <div class="mm-view-search-bar">
+          <div class="mm-search-wrap">
+            <i class="fa-solid fa-magnifying-glass mm-search-icon"></i>
+            <input type="text" id="contacts-search" class="mm-search-input" placeholder="Search contacts...">
+          </div>
+        </div>
+        <div class="mm-filter-chips">
+          <button class="mm-chip active" data-contacts-filter="all">All</button>
+          <button class="mm-chip" data-contacts-filter="starred">⭐ Favorites</button>
+        </div>
+        <div class="mm-contacts-list" id="contacts-list">
+          <div class="mm-empty-state" id="contacts-empty">
+            <div class="mm-empty-icon"><i class="fa-solid fa-address-book"></i></div>
+            <p>No contacts yet</p><small>Add contacts for quick access when sending</small>
+          </div>
+        </div>
+        <div style="padding:12px 16px;">
+          <div class="mm-contacts-import-export">
+            <button class="mm-btn mm-btn-ghost" id="btn-export-contacts"><i class="fa-solid fa-download"></i> Export</button>
+            <label class="mm-btn mm-btn-ghost" for="contacts-import-file"><i class="fa-solid fa-upload"></i> Import</label>
+            <input type="file" id="contacts-import-file" class="hidden" accept=".json">
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: CONNECTED SITES ==================== -->
+      <section class="mm-view" id="view-connected-sites">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-settings-hub"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Connected Sites</h2>
+          <button class="mm-icon-btn mm-btn-danger-icon" id="btn-disconnect-all-sites" title="Disconnect all"><i class="fa-solid fa-link-slash"></i></button>
+        </div>
+        <div class="mm-view-search-bar">
+          <div class="mm-search-wrap">
+            <i class="fa-solid fa-magnifying-glass mm-search-icon"></i>
+            <input type="text" id="sites-search" class="mm-search-input" placeholder="Search sites...">
+          </div>
+        </div>
+        <div class="mm-sites-list" id="connected-sites-list">
+          <div class="mm-empty-state" id="sites-empty">
+            <div class="mm-empty-icon"><i class="fa-solid fa-plug-circle-xmark"></i></div>
+            <p>No connected sites</p><small>DApps you connect to will appear here</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: SETTINGS HUB ==================== -->
+      <section class="mm-view" id="view-settings-hub">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-home"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Settings</h2><div></div>
+        </div>
+        <div class="mm-settings-hub-list">
+          <button class="mm-settings-hub-item" data-target-view="view-settings-general">
+            <div class="mm-settings-hub-icon" style="background:rgba(3,125,214,0.12);color:var(--mm-blue);"><i class="fa-solid fa-sliders"></i></div>
+            <div class="mm-settings-hub-text"><div class="mm-settings-hub-title">General</div><div class="mm-settings-hub-desc">Preferences, currency, language</div></div>
+            <i class="fa-solid fa-chevron-right mm-settings-hub-chevron"></i>
+          </button>
+          <button class="mm-settings-hub-item" data-target-view="view-settings-security">
+            <div class="mm-settings-hub-icon" style="background:rgba(215,58,73,0.12);color:var(--mm-red);"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="mm-settings-hub-text"><div class="mm-settings-hub-title">Security & Privacy</div><div class="mm-settings-hub-desc">Password, auto-lock, backup, keys</div></div>
+            <i class="fa-solid fa-chevron-right mm-settings-hub-chevron"></i>
+          </button>
+          <button class="mm-settings-hub-item" data-target-view="view-networks">
+            <div class="mm-settings-hub-icon" style="background:rgba(40,167,69,0.12);color:var(--mm-green);"><i class="fa-solid fa-network-wired"></i></div>
+            <div class="mm-settings-hub-text"><div class="mm-settings-hub-title">Networks</div><div class="mm-settings-hub-desc">Manage RPC networks and chains</div></div>
+            <i class="fa-solid fa-chevron-right mm-settings-hub-chevron"></i>
+          </button>
+          <button class="mm-settings-hub-item" data-target-view="view-connected-sites">
+            <div class="mm-settings-hub-icon" style="background:rgba(106,62,172,0.12);color:var(--mm-purple);"><i class="fa-solid fa-globe"></i></div>
+            <div class="mm-settings-hub-text"><div class="mm-settings-hub-title">Connected Sites</div><div class="mm-settings-hub-desc">Manage DApp connections</div></div>
+            <i class="fa-solid fa-chevron-right mm-settings-hub-chevron"></i>
+          </button>
+          <button class="mm-settings-hub-item" data-target-view="view-contacts">
+            <div class="mm-settings-hub-icon" style="background:rgba(246,133,27,0.12);color:var(--mm-orange);"><i class="fa-solid fa-address-book"></i></div>
+            <div class="mm-settings-hub-text"><div class="mm-settings-hub-title">Contacts</div><div class="mm-settings-hub-desc">Address book and favorites</div></div>
+            <i class="fa-solid fa-chevron-right mm-settings-hub-chevron"></i>
+          </button>
+          <button class="mm-settings-hub-item" data-target-view="view-settings-appearance">
+            <div class="mm-settings-hub-icon" style="background:rgba(0,200,224,0.12);color:var(--mm-cyan);"><i class="fa-solid fa-palette"></i></div>
+            <div class="mm-settings-hub-text"><div class="mm-settings-hub-title">Appearance</div><div class="mm-settings-hub-desc">Theme, dark mode, colors</div></div>
+            <i class="fa-solid fa-chevron-right mm-settings-hub-chevron"></i>
+          </button>
+          <button class="mm-settings-hub-item" data-target-view="view-settings-currency">
+            <div class="mm-settings-hub-icon" style="background:rgba(40,167,69,0.12);color:var(--mm-green);"><i class="fa-solid fa-coins"></i></div>
+            <div class="mm-settings-hub-text"><div class="mm-settings-hub-title">Currency</div><div class="mm-settings-hub-desc">Display currency for balances</div></div>
+            <i class="fa-solid fa-chevron-right mm-settings-hub-chevron"></i>
+          </button>
+          <button class="mm-settings-hub-item" data-target-view="view-settings-language">
+            <div class="mm-settings-hub-icon" style="background:rgba(246,133,27,0.12);color:var(--mm-orange);"><i class="fa-solid fa-language"></i></div>
+            <div class="mm-settings-hub-text"><div class="mm-settings-hub-title">Language</div><div class="mm-settings-hub-desc">App display language</div></div>
+            <i class="fa-solid fa-chevron-right mm-settings-hub-chevron"></i>
+          </button>
+          <button class="mm-settings-hub-item" data-target-view="view-settings-about">
+            <div class="mm-settings-hub-icon" style="background:rgba(153,153,153,0.12);color:var(--text-muted);"><i class="fa-solid fa-circle-info"></i></div>
+            <div class="mm-settings-hub-text"><div class="mm-settings-hub-title">About</div><div class="mm-settings-hub-desc">Version, terms, privacy policy</div></div>
+            <i class="fa-solid fa-chevron-right mm-settings-hub-chevron"></i>
+          </button>
+        </div>
+        <div style="padding:16px;">
+          <button class="mm-btn mm-btn-danger full-width" id="btn-lock-now"><i class="fa-solid fa-lock"></i> Lock Wallet</button>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: SETTINGS > GENERAL ==================== -->
+      <section class="mm-view" id="view-settings-general">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-settings-hub"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>General</h2><div></div>
+        </div>
+        <div class="mm-view-body">
+          <div class="mm-settings-section">
+            <div class="mm-settings-label"><i class="fa-solid fa-wallet"></i> Account</div>
+            <div class="mm-settings-card">
+              <div class="mm-settings-row-title">Account Name</div>
+              <div class="mm-inline-form" style="margin-top:8px;">
+                <input type="text" id="input-general-acc-name" class="mm-input" placeholder="Enter account name">
+                <button class="mm-btn mm-btn-ghost" id="btn-save-acc-name">Save</button>
+              </div>
+            </div>
+          </div>
+          <div class="mm-settings-section">
+            <div class="mm-settings-label"><i class="fa-solid fa-coins"></i> Currency</div>
+            <div class="mm-settings-card">
+              <div class="mm-settings-row">
+                <div><div class="mm-settings-row-title">Display Currency</div><div class="mm-settings-row-desc">Currency for balance display</div></div>
+                <button class="mm-settings-nav-btn" data-target-view="view-settings-currency" id="btn-go-currency">
+                  <span id="selected-currency-display">USD</span> <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="mm-settings-section">
+            <div class="mm-settings-label"><i class="fa-solid fa-language"></i> Language</div>
+            <div class="mm-settings-card">
+              <div class="mm-settings-row">
+                <div><div class="mm-settings-row-title">Display Language</div><div class="mm-settings-row-desc">App interface language</div></div>
+                <button class="mm-settings-nav-btn" data-target-view="view-settings-language" id="btn-go-language">
+                  <span id="selected-language-display">English</span> <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: SETTINGS > SECURITY ==================== -->
+      <section class="mm-view" id="view-settings-security">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-settings-hub"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Security & Privacy</h2><div></div>
+        </div>
+        <div class="mm-view-body">
+          <!-- Change Password -->
+          <div class="mm-settings-section">
+            <div class="mm-settings-label"><i class="fa-solid fa-key"></i> Password</div>
+            <div class="mm-settings-card">
+              <div class="mm-settings-row-title">Change Password</div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+                <input type="password" id="input-current-pass" class="mm-input" placeholder="Current password" autocomplete="off">
+                <input type="password" id="input-new-pass" class="mm-input" placeholder="New password" autocomplete="off">
+                <input type="password" id="input-confirm-new-pass" class="mm-input" placeholder="Confirm new password" autocomplete="off">
+                <button class="mm-btn mm-btn-primary full-width" id="btn-change-password">Update Password</button>
+              </div>
+            </div>
+          </div>
+          <!-- Auto-Lock -->
+          <div class="mm-settings-section">
+            <div class="mm-settings-label"><i class="fa-solid fa-lock"></i> Auto-Lock</div>
+            <div class="mm-settings-card">
+              <div class="mm-settings-row">
+                <div><div class="mm-settings-row-title">Auto-Lock Timer</div><div class="mm-settings-row-desc">Lock after inactivity</div></div>
+                <select id="select-autolock-time" class="mm-select-sm">
+                  <option value="1">1 min</option><option value="5" selected>5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option><option value="never">Never</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!-- Backup Status -->
+          <div class="mm-settings-section">
+            <div class="mm-settings-label"><i class="fa-solid fa-database"></i> Backup</div>
+            <div class="mm-settings-card">
+              <div class="mm-settings-row">
+                <div><div class="mm-settings-row-title">Recovery Phrase Status</div><div class="mm-settings-row-desc" id="backup-status-desc">—</div></div>
+                <span class="mm-status-badge" id="backup-status-badge">—</span>
+              </div>
+            </div>
+          </div>
+          <!-- Reveal SRP -->
+          <div class="mm-settings-section">
+            <div class="mm-settings-label"><i class="fa-solid fa-shield-halved" style="color:var(--mm-red);"></i> Secret Recovery Phrase</div>
+            <div class="mm-settings-card">
+              <div class="mm-srp-warning" style="margin-bottom:12px;"><i class="fa-solid fa-triangle-exclamation"></i> Anyone with this phrase controls your wallet.</div>
+              <div id="srp-auth-step">
+                <input type="password" id="input-srp-confirm-pass" class="mm-input" placeholder="Confirm password" autocomplete="off" style="margin-bottom:10px;">
+                <button class="mm-btn mm-btn-danger full-width mm-hold-btn" id="btn-hold-srp">
+                  <div class="mm-hold-bar" id="srp-progress-bar"></div>
+                  <i class="fa-solid fa-hand-pointer"></i><span id="srp-hold-text">Hold to reveal phrase</span>
+                </button>
+              </div>
+              <div id="srp-revealed-box" class="hidden" style="margin-top:12px;">
+                <div class="mm-countdown-badge" id="srp-autohide-badge"><i class="fa-regular fa-clock"></i> Hiding in <strong id="srp-timer-num">30</strong>s</div>
+                <div class="mm-mnemonic-grid" id="srp-secure-grid" style="margin:10px 0;"></div>
+                <button class="mm-btn mm-btn-ghost full-width" id="btn-copy-srp-secure"><i class="fa-regular fa-copy"></i> Copy phrase</button>
+                <button class="mm-btn mm-btn-ghost full-width" id="btn-hide-srp-now" style="margin-top:6px;"><i class="fa-solid fa-eye-slash"></i> Hide phrase</button>
+              </div>
+            </div>
+          </div>
+          <!-- Export Private Key -->
+          <div class="mm-settings-section">
+            <div class="mm-settings-label"><i class="fa-solid fa-key" style="color:var(--mm-red);"></i> Private Key</div>
+            <div class="mm-settings-card">
+              <div class="mm-settings-row-title" style="margin-bottom:8px;">Export Private Key</div>
+              <select id="select-export-account" class="mm-input" style="margin-bottom:10px;"></select>
+              <div class="mm-srp-warning" style="margin-bottom:12px;"><i class="fa-solid fa-triangle-exclamation"></i> Never share your private key!</div>
+              <div id="pk-auth-step">
+                <input type="password" id="input-pk-confirm-pass" class="mm-input" placeholder="Confirm password" autocomplete="off" style="margin-bottom:10px;">
+                <button class="mm-btn mm-btn-danger full-width mm-hold-btn" id="btn-hold-pk">
+                  <div class="mm-hold-bar" id="pk-progress-bar"></div>
+                  <i class="fa-solid fa-hand-pointer"></i><span id="pk-hold-text">Hold to reveal key</span>
+                </button>
+              </div>
+              <div id="pk-revealed-box" class="hidden" style="margin-top:12px;">
+                <div class="mm-countdown-badge" id="pk-autohide-badge"><i class="fa-regular fa-clock"></i> Hiding in <strong id="pk-timer-num">30</strong>s</div>
+                <input type="text" id="input-pk-secure-val" class="mm-input mm-mono-input" readonly autocomplete="off" style="margin-top:10px;">
+                <button class="mm-btn mm-btn-ghost full-width" id="btn-copy-pk-secure" style="margin-top:8px;"><i class="fa-regular fa-copy"></i> Copy key</button>
+                <button class="mm-btn mm-btn-ghost full-width" id="btn-hide-pk-now" style="margin-top:6px;"><i class="fa-solid fa-eye-slash"></i> Hide key</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: SETTINGS > APPEARANCE ==================== -->
+      <section class="mm-view" id="view-settings-appearance">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-settings-hub"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Appearance</h2><div></div>
+        </div>
+        <div class="mm-view-body">
+          <div class="mm-settings-section">
+            <div class="mm-settings-label"><i class="fa-solid fa-circle-half-stroke"></i> Color Theme</div>
+            <div class="mm-theme-cards">
+              <div class="mm-theme-card active" id="theme-card-dark" data-theme="dark">
+                <div class="mm-theme-preview dark-preview">
+                  <div class="mm-tp-header"></div>
+                  <div class="mm-tp-body"></div>
+                </div>
+                <div class="mm-theme-card-label"><i class="fa-solid fa-moon"></i> Dark</div>
+              </div>
+              <div class="mm-theme-card" id="theme-card-light" data-theme="light">
+                <div class="mm-theme-preview light-preview">
+                  <div class="mm-tp-header"></div>
+                  <div class="mm-tp-body"></div>
+                </div>
+                <div class="mm-theme-card-label"><i class="fa-solid fa-sun"></i> Light</div>
+              </div>
+              <div class="mm-theme-card" id="theme-card-system" data-theme="system">
+                <div class="mm-theme-preview system-preview">
+                  <div class="mm-tp-header"></div>
+                  <div class="mm-tp-body"></div>
+                </div>
+                <div class="mm-theme-card-label"><i class="fa-solid fa-desktop"></i> System</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: SETTINGS > CURRENCY ==================== -->
+      <section class="mm-view" id="view-settings-currency">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-settings-hub"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Currency</h2><div></div>
+        </div>
+        <div class="mm-view-search-bar">
+          <div class="mm-search-wrap">
+            <i class="fa-solid fa-magnifying-glass mm-search-icon"></i>
+            <input type="text" id="currency-search" class="mm-search-input" placeholder="Search currencies...">
+          </div>
+        </div>
+        <div class="mm-currency-list" id="currency-list"></div>
+      </section>
+
+      <!-- ==================== VIEW: SETTINGS > LANGUAGE ==================== -->
+      <section class="mm-view" id="view-settings-language">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-settings-hub"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>Language</h2><div></div>
+        </div>
+        <div class="mm-language-list" id="language-list"></div>
+      </section>
+
+      <!-- ==================== VIEW: SETTINGS > ABOUT ==================== -->
+      <section class="mm-view" id="view-settings-about">
+        <div class="mm-view-header">
+          <button class="mm-back-btn" data-target-view="view-settings-hub"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2>About</h2><div></div>
+        </div>
+        <div class="mm-view-body">
+          <div class="mm-about-logo">
+            <svg viewBox="0 0 35 33" class="mm-fox-logo" style="width:48px;height:44px;" xmlns="http://www.w3.org/2000/svg"><path d="M32.956 1l-13.14 9.728 2.443-5.79L32.956 1z" fill="#E2761B"/><path d="M2.044 1l13.03 9.82-2.332-5.882L2.044 1z" fill="#E4761B"/><path d="M20.508 18.27l.408-7.384 1.855-5.018h-8.252l1.856 5.018.408 7.384.14 2.049.01 5.95h3.42l.021-5.95.134-2.049z" fill="#F6851B"/></svg>
+            <div class="mm-about-app-name">Apex Wallet</div>
+            <div class="mm-about-version">Version 1.0.0 · Phase 12</div>
+          </div>
+          <div class="mm-settings-card">
+            <div class="mm-about-row"><span>App Version</span><span>1.0.0</span></div>
+            <div class="mm-about-row"><span>Network Library</span><span>ethers.js v6</span></div>
+            <div class="mm-about-row"><span>Price Data</span><span>CoinGecko API</span></div>
+            <div class="mm-about-row"><span>Build</span><span>Phase 12 Complete</span></div>
+          </div>
+          <div class="mm-settings-card">
+            <button class="mm-about-link"><i class="fa-solid fa-file-shield"></i> Privacy Policy</button>
+            <button class="mm-about-link"><i class="fa-solid fa-scale-balanced"></i> Terms of Service</button>
+            <button class="mm-about-link"><i class="fa-brands fa-github"></i> Source Code</button>
           </div>
         </div>
       </section>
 
     </main>
-  </div>
 
-  <!-- QR Code Modal -->
-  <div id="qr-modal" class="modal-overlay hidden">
-    <div class="modal-content glass-card">
-      <div class="modal-header">
-        <h3>Wallet Address QR Code</h3>
-        <button class="modal-close" id="btn-close-qr-modal">&times;</button>
+    <!-- ===== BOTTOM NAV (5 tabs) ===== -->
+    <nav class="mm-bottom-nav">
+      <button class="mm-nav-btn active" data-nav-view="view-home"><i class="fa-solid fa-house"></i><span>Home</span></button>
+      <button class="mm-nav-btn" data-nav-view="view-activity"><i class="fa-solid fa-clock-rotate-left"></i><span>Activity</span></button>
+      <button class="mm-nav-btn" data-nav-view="view-networks"><i class="fa-solid fa-network-wired"></i><span>Networks</span></button>
+      <button class="mm-nav-btn" data-nav-view="view-notifications"><i class="fa-solid fa-bell"></i><span>Alerts</span></button>
+      <button class="mm-nav-btn" data-nav-view="view-settings-hub"><i class="fa-solid fa-gear"></i><span>Settings</span></button>
+    </nav>
+
+  </div><!-- end mm-app -->
+
+  <!-- ===== ACCOUNT DRAWER ===== -->
+  <div class="mm-drawer-overlay hidden" id="accounts-drawer">
+    <div class="mm-drawer">
+      <div class="mm-drawer-top">
+        <h3>Select an account</h3>
+        <button class="mm-icon-btn" id="btn-close-drawer"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <div class="modal-body text-center">
-        <div id="qrcode-container" class="qrcode-wrapper"></div>
-        <p class="mono-text modal-address-text" id="modal-qr-address"></p>
+      <div class="mm-drawer-accounts" id="drawer-accounts-list"></div>
+      <div class="mm-drawer-footer">
+        <button class="mm-btn mm-btn-ghost full-width" id="drawer-btn-create-acc"><i class="fa-solid fa-plus"></i> Add account</button>
+        <button class="mm-btn mm-btn-ghost full-width" id="drawer-btn-import-acc"><i class="fa-solid fa-file-import"></i> Import account</button>
       </div>
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <!-- ===== ACCOUNT DETAILS MODAL ===== -->
+  <div class="mm-modal-overlay hidden" id="account-details-modal">
+    <div class="mm-modal">
+      <div class="mm-modal-header"><h3>Account Details</h3><button class="mm-icon-btn" id="btn-close-acc-details"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="mm-modal-body">
+        <div class="mm-acc-details-avatar" id="modal-acc-avatar"></div>
+        <div class="mm-acc-details-name" id="modal-acc-name">Account 1</div>
+        <div class="mm-qr-container" id="modal-qr-container"></div>
+        <div class="mm-address-box mm-address-box-lg"><span class="mm-mono-addr" id="modal-qr-address">—</span></div>
+        <div class="mm-modal-actions">
+          <button class="mm-icon-text-btn" id="btn-copy-modal-address"><i class="fa-regular fa-copy"></i> Copy address</button>
+          <a id="tx-explorer-link" href="#" target="_blank" class="mm-icon-text-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Explorer</a>
+        </div>
+        <div class="mm-form-group" style="margin-top:16px;"><label>Account Name</label><div class="mm-inline-form"><input type="text" id="input-rename-acc-name" class="mm-input" placeholder="Enter name"><button class="mm-btn mm-btn-ghost" id="btn-submit-rename-acc">Save</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== IMPORT ACCOUNT MODAL ===== -->
+  <div class="mm-modal-overlay hidden" id="import-acc-modal">
+    <div class="mm-modal">
+      <div class="mm-modal-header"><h3>Import Account</h3><button class="mm-icon-btn" id="btn-close-import-modal"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="mm-modal-body">
+        <div class="mm-srp-warning" style="margin-bottom:16px;"><i class="fa-solid fa-triangle-exclamation"></i> Imported accounts are not backed by your Recovery Phrase.</div>
+        <div class="mm-form-group"><label>Private Key</label><input type="password" id="input-import-acc-privkey" class="mm-input mm-mono-input" placeholder="Paste private key 0x..." autocomplete="off"><span class="mm-hint">Your private key will be encrypted and stored locally.</span></div>
+        <button class="mm-btn mm-btn-primary full-width" id="btn-submit-import-acc">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== IMPORT TOKEN MODAL ===== -->
+  <div class="mm-modal-overlay hidden" id="import-token-modal">
+    <div class="mm-modal">
+      <div class="mm-modal-header"><h3>Import Token</h3><button class="mm-icon-btn" id="btn-close-import-token"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="mm-modal-body">
+        <div class="mm-info-box" style="margin-bottom:16px;"><i class="fa-solid fa-circle-info"></i><span>Anyone can create a token. Be cautious of scam tokens.</span></div>
+        <div class="mm-form-group"><label>Token Contract Address</label><input type="text" id="input-token-address" class="mm-input mm-mono-input" placeholder="0x..." autocomplete="off"></div>
+        <div id="token-fetch-result" class="hidden">
+          <div class="mm-token-preview" id="token-preview-row"></div>
+        </div>
+        <div id="token-fetch-loading" class="hidden"><div class="mm-skeleton-row" style="margin:12px 0;"><div class="mm-skel mm-skel-circle"></div><div class="mm-skel-lines"><div class="mm-skel mm-skel-line w-70"></div><div class="mm-skel mm-skel-line w-40"></div></div></div></div>
+        <button class="mm-btn mm-btn-primary full-width" id="btn-fetch-token" style="margin-top:8px;">Fetch Token Info</button>
+        <button class="mm-btn mm-btn-ghost full-width hidden" id="btn-confirm-import-token" style="margin-top:8px;"><i class="fa-solid fa-plus"></i> Add Token</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADD CONTACT MODAL ===== -->
+  <div class="mm-modal-overlay hidden" id="add-contact-modal">
+    <div class="mm-modal">
+      <div class="mm-modal-header"><h3 id="contact-modal-title">Add Contact</h3><button class="mm-icon-btn" id="btn-close-add-contact"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="mm-modal-body">
+        <div class="mm-form-group"><label>Name</label><input type="text" id="input-contact-name" class="mm-input" placeholder="Contact name" autocomplete="off"></div>
+        <div class="mm-form-group"><label>Address</label><input type="text" id="input-contact-address" class="mm-input mm-mono-input" placeholder="0x..." autocomplete="off"></div>
+        <div class="mm-form-group"><label>Note (optional)</label><input type="text" id="input-contact-note" class="mm-input" placeholder="Brief note..." autocomplete="off"></div>
+        <div class="mm-settings-row" style="margin-bottom:16px;">
+          <div><div class="mm-settings-row-title">Favorite</div><div class="mm-settings-row-desc">Appear in favorites tab</div></div>
+          <label class="mm-toggle-wrap"><input type="checkbox" id="contact-star-toggle" class="mm-toggle-input"><span class="mm-toggle-slider"></span></label>
+        </div>
+        <button class="mm-btn mm-btn-primary full-width" id="btn-save-contact">Save Contact</button>
+        <input type="hidden" id="editing-contact-id">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADD NETWORK MODAL ===== -->
+  <div class="mm-modal-overlay hidden" id="add-network-modal">
+    <div class="mm-modal">
+      <div class="mm-modal-header"><h3 id="network-modal-title">Add Network</h3><button class="mm-icon-btn" id="btn-close-add-network"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="mm-modal-body">
+        <div class="mm-form-group"><label>Network Name</label><input type="text" id="input-net-name" class="mm-input" placeholder="e.g. My Custom Network" autocomplete="off"></div>
+        <div class="mm-form-group"><label>RPC URL</label><input type="url" id="input-net-rpc" class="mm-input mm-mono-input" placeholder="https://..." autocomplete="off"></div>
+        <div class="mm-form-group"><label>Chain ID</label><input type="number" id="input-net-chainid" class="mm-input" placeholder="e.g. 1337" autocomplete="off"></div>
+        <div class="mm-form-group"><label>Currency Symbol</label><input type="text" id="input-net-symbol" class="mm-input" placeholder="e.g. ETH" autocomplete="off" maxlength="10"></div>
+        <div class="mm-form-group"><label>Block Explorer URL (optional)</label><input type="url" id="input-net-explorer" class="mm-input mm-mono-input" placeholder="https://..." autocomplete="off"></div>
+        <div id="network-test-result" class="hidden" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="mm-btn mm-btn-ghost" id="btn-test-network" style="flex:1;">Test RPC</button>
+          <button class="mm-btn mm-btn-primary" id="btn-save-network" style="flex:2;">Save Network</button>
+        </div>
+        <input type="hidden" id="editing-network-key">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TX DETAIL MODAL ===== -->
+  <div class="mm-modal-overlay hidden" id="tx-detail-modal">
+    <div class="mm-modal">
+      <div class="mm-modal-header"><h3>Transaction Details</h3><button class="mm-icon-btn" id="btn-close-tx-detail"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="mm-modal-body" id="tx-detail-body"></div>
+    </div>
+  </div>
+
+  <!-- ===== LOCK SCREEN ===== -->
+  <div class="mm-lock-screen hidden" id="lock-screen-overlay">
+    <div class="mm-lock-content">
+      <svg viewBox="0 0 35 33" class="mm-lock-fox" xmlns="http://www.w3.org/2000/svg"><path d="M32.956 1l-13.14 9.728 2.443-5.79L32.956 1z" fill="#E2761B"/><path d="M2.044 1l13.03 9.82-2.332-5.882L2.044 1z" fill="#E4761B"/><path d="M20.508 18.27l.408-7.384 1.855-5.018h-8.252l1.856 5.018.408 7.384.14 2.049.01 5.95h3.42l.021-5.95.134-2.049z" fill="#F6851B"/></svg>
+      <h2>Apex Wallet</h2>
+      <p class="mm-lock-subtitle">Enter your password to unlock</p>
+      <form id="form-unlock-wallet" onsubmit="return false;">
+        <input type="password" id="input-unlock-password" class="mm-input" placeholder="Password" autocomplete="off">
+        <button class="mm-btn mm-btn-primary full-width" id="btn-unlock-submit" type="submit">Unlock</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== COPY WARNING MODAL ===== -->
+  <div class="mm-modal-overlay hidden" id="copy-warning-modal">
+    <div class="mm-modal">
+      <div class="mm-modal-header"><h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--mm-orange);"></i> Security Warning</h3><button class="mm-icon-btn" id="btn-close-copy-modal"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="mm-modal-body">
+        <p class="mm-modal-desc">Copying sensitive data to your clipboard may expose it to other applications. Are you sure?</p>
+        <button class="mm-btn mm-btn-primary full-width" id="btn-confirm-copy-action"><i class="fa-regular fa-copy"></i> Copy Anyway</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end mm-shell -->
+<script src="app.js"></script>
 </body>
 </html>
