@@ -24,6 +24,7 @@ const TOKEN_LOGOS = {
   SNX:  'https://assets.coingecko.com/coins/images/3406/small/SNX.png',
   BAL:  'https://assets.coingecko.com/coins/images/11683/small/Balancer.png',
   SUSHI:'https://assets.coingecko.com/coins/images/12271/small/512x512_Logo_no_chop.png',
+  PEPE: 'https://assets.coingecko.com/coins/images/29850/small/pepe-token.jpeg',
 };
 
 const COINGECKO_IDS = {
@@ -32,7 +33,7 @@ const COINGECKO_IDS = {
   MATIC: 'matic-network', BNB: 'binancecoin', WBTC: 'wrapped-bitcoin',
   ARB: 'arbitrum', OP: 'optimism', LDO: 'lido-dao', MKR: 'maker',
   CRV: 'curve-dao-token', COMP: 'compound-governance-token',
-  SNX: 'havven', BAL: 'balancer', SUSHI: 'sushi',
+  SNX: 'havven', BAL: 'balancer', SUSHI: 'sushi', PEPE: 'pepe',
 };
 
 const POPULAR_TOKENS = {
@@ -52,6 +53,7 @@ const POPULAR_TOKENS = {
     { symbol: 'SNX',   name: 'Synthetix',           decimals: 18, address: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F' },
     { symbol: 'SUSHI', name: 'SushiSwap',           decimals: 18, address: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2' },
     { symbol: 'BAL',   name: 'Balancer',            decimals: 18, address: '0xba100000625a3754423978a60c9317c58a424e3D' },
+    { symbol: 'PEPE',  name: 'Pepe',                decimals: 18, address: '0x6982508145454Ce325dDbE47a25d4ec3d2311933' },
   ],
   sepolia: [
     { symbol: 'USDC',  name: 'USD Coin (Test)',      decimals: 6,  address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8' },

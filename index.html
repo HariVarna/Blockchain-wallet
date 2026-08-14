@@ -36,20 +36,20 @@
           <path d="M20.508 18.27l.408-7.384 1.855-5.018h-8.252l1.856 5.018.408 7.384.14 2.049.01 5.95h3.42l.021-5.95.134-2.049z" fill="#F6851B" stroke="#F6851B" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-      <div class="mm-network-pill" id="mm-network-pill">
-        <span class="mm-network-dot" id="mm-network-dot"></span>
+
+      <div class="mm-network-pill">
+        <div class="mm-network-dot" id="mm-network-dot"></div>
         <select id="network-select" class="mm-network-select">
-          <option value="sepolia">Ethereum Sepolia</option>
           <option value="mainnet">Ethereum Mainnet</option>
+          <option value="sepolia">Sepolia Testnet</option>
           <option value="polygon">Polygon</option>
-          <option value="arbitrum">Arbitrum One</option>
           <option value="optimism">Optimism</option>
+          <option value="arbitrum">Arbitrum</option>
           <option value="base">Base</option>
-          <option value="bsc">BNB Chain</option>
-          <option value="avalanche">Avalanche</option>
         </select>
-        <i class="fa-solid fa-chevron-down mm-network-chevron"></i>
+        <i class="fa-solid fa-chevron-down" style="font-size: 10px; color: var(--text-secondary);"></i>
       </div>
+
       <div class="mm-header-right">
         <button class="mm-notif-btn" id="btn-open-notifications" title="Notifications" data-nav-view="view-notifications">
           <i class="fa-solid fa-bell"></i>
@@ -91,8 +91,10 @@
           </button>
         </div>
         <div class="mm-balance-section">
-          <div class="mm-eth-balance" id="dash-eth-balance">0.0000</div>
-          <div class="mm-balance-unit">ETH</div>
+          <div class="mm-balance-primary">
+            <span class="mm-eth-balance" id="dash-eth-balance">0.0000</span>
+            <span class="mm-balance-unit" id="dash-balance-unit">ETH</span>
+          </div>
           <div class="mm-usd-balance" id="dash-usd-balance">$0.00 USD</div>
         </div>
         <div class="mm-actions-row">
@@ -146,13 +148,13 @@
                 <svg viewBox="0 0 784 1277" xmlns="http://www.w3.org/2000/svg"><path d="M392.07 0L383.5 28.67V844.47L392.07 853.04L784.13 619.42L392.07 0Z" fill="#343434"/><path d="M392.07 0L0 619.42L392.07 853.04V456.63V0Z" fill="#8C8C8C"/><path d="M392.07 928.43L387.25 934.35V1226.12L392.07 1277L784.37 694.84L392.07 928.43Z" fill="#3C3C3B"/><path d="M392.07 1277V928.43L0 694.84L392.07 1277Z" fill="#8C8C8C"/><path d="M392.07 853.04L784.13 619.42L392.07 456.63V853.04Z" fill="#141414"/><path d="M0 619.42L392.07 853.04V456.63L0 619.42Z" fill="#393939"/></svg>
               </div>
               <div class="mm-token-info">
-                <div class="mm-token-name">Ethereum</div>
-                <div class="mm-token-amount"><span id="token-eth-amount">0.0000</span> ETH</div>
+                <div class="mm-token-name" id="token-native-name">Ethereum</div>
+                <div class="mm-token-amount"><span id="token-eth-amount">0.0000</span> <span id="token-native-symbol">ETH</span></div>
                 <div class="mm-token-eth-price" id="eth-price-ticker">Loading price...</div>
               </div>
               <div class="mm-token-value">
                 <div class="mm-token-usd" id="token-eth-usd">$0.00</div>
-                <div class="mm-token-change neutral">0.00%</div>
+                <div class="mm-token-change neutral" id="token-native-change">0.00%</div>
               </div>
             </div>
             <!-- ERC-20 tokens rendered here by JS -->
@@ -170,9 +172,6 @@
               <span class="mm-price-badge" id="mm-eth-price-badge"><i class="fa-brands fa-ethereum"></i> <span id="mm-eth-price-live">—</span></span>
               <button class="mm-refresh-btn" id="btn-refresh-balance" title="Refresh"><i class="fa-solid fa-rotate-right"></i></button>
             </div>
-            <button class="mm-import-token-btn" id="btn-open-import-token">
-              <i class="fa-solid fa-plus"></i> Import token
-            </button>
           </div>
         </div>
 
@@ -183,13 +182,7 @@
 
         <!-- Activity Panel (mini) -->
         <div class="mm-asset-panel" id="asset-panel-activity">
-          <div class="mm-activity-list" id="mm-activity-list">
-            <div class="mm-empty-state" id="mm-activity-empty">
-              <div class="mm-empty-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
-              <p>No transactions yet</p>
-              <small>Your activity will appear here</small>
-            </div>
-          </div>
+          <div class="mm-activity-list" id="mm-activity-list"></div>
           <div style="padding:8px 16px;">
             <button class="mm-btn mm-btn-ghost full-width" data-nav-view="view-activity">
               <i class="fa-solid fa-list"></i> View All Activity
@@ -393,8 +386,6 @@
         </div>
         <div class="mm-view-body">
           <div class="mm-card"><div class="mm-card-header"><i class="fa-solid fa-key"></i><span>Secret Recovery Phrase</span></div><div class="mm-form-group"><label for="input-import-mnemonic">Enter your 12 or 24 word phrase</label><textarea id="input-import-mnemonic" class="mm-input mm-textarea" placeholder="Word 1, Word 2, Word 3..." rows="3"></textarea></div><button class="mm-btn mm-btn-primary full-width" id="btn-submit-import-mnemonic">Import</button></div>
-          <div class="mm-card"><div class="mm-card-header"><i class="fa-solid fa-lock"></i><span>Private Key</span></div><div class="mm-form-group"><label for="input-import-privkey">Paste your private key</label><input type="password" id="input-import-privkey" class="mm-input" placeholder="0x..." autocomplete="off"></div><button class="mm-btn mm-btn-primary full-width" id="btn-submit-import-privkey">Import</button></div>
-          <div class="mm-card"><div class="mm-card-header"><i class="fa-solid fa-file-code"></i><span>Keystore JSON</span></div><div id="file-dropzone" class="mm-dropzone"><input type="file" id="file-input" accept=".json" class="hidden"><i class="fa-solid fa-upload"></i><p>Drop JSON file here or <span class="mm-link-btn">browse</span></p></div></div>
         </div>
       </section>
 

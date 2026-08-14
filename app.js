@@ -45,9 +45,11 @@
   let contacts = [];
   let connectedSites = [];
   let notifications = [];
+  let txHistory = [];
 
   let ethPriceUsd = null;
   let ethChange24h = null;
+  let tokenPricesData = {};
   let priceRefreshTimer = null;
 
   let masterPassword = '';
@@ -187,7 +189,15 @@
       console.warn('Fallback RPC error:', e);
       provider = new ethers.JsonRpcProvider(PRESET_NETWORKS.sepolia.rpc);
     }
+    
+    // Clear out old network balances to prevent flashing incorrect values
+    accountBalances = {};
+    tokenBalances = {};
+    
     updateNetworkPillUI(net);
+    updateDashboardBalanceUI();
+    renderAssetTab(currentAssetTab);
+    
     refreshBalances();
   }
 
@@ -243,17 +253,53 @@
   // PRICE INTEGRATION (CoinGecko API)
   // ===========================================
 
-  async function fetchEthPrice() {
+  async function fetchPrices() {
     try {
-      const url = `${COINGECKO_BASE}/simple/price?ids=ethereum&vs_currencies=usd,eur,gbp,inr&include_24hr_change=true&x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+      const networkTokens = POPULAR_TOKENS[currentNetworkKey] || [];
+      const allTokens = [...networkTokens, ...customTokens];
+      const symbols = new Set(['ETH']);
+      allTokens.forEach(t => symbols.add(t.symbol.toUpperCase()));
+      
+      const idsToFetch = [];
+      const idToSymbol = {};
+      
+      symbols.forEach(sym => {
+        const id = COINGECKO_IDS[sym];
+        if (id) {
+          idsToFetch.push(id);
+          idToSymbol[id] = sym;
+        }
+      });
+      
+      if (idsToFetch.length === 0) idsToFetch.push('ethereum');
+      
+      const idsStr = idsToFetch.join(',');
+      const url = `${COINGECKO_BASE}/coins/markets?vs_currency=${selectedCurrency.toLowerCase()}&ids=${idsStr}&sparkline=true&x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+      
       const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();
-      if (data && data.ethereum) {
-        ethPriceUsd = data.ethereum.usd;
-        ethChange24h = data.ethereum.usd_24h_change;
-        updatePriceDisplayUI();
-      }
+      
+      data.forEach(coin => {
+        const cgId = coin.id;
+        const sym = idToSymbol[cgId];
+        if (sym) {
+          tokenPricesData[sym] = {
+            price: coin.current_price || 0,
+            change24h: coin.price_change_percentage_24h || 0,
+            sparkline: coin.sparkline_in_7d?.price || []
+          };
+        }
+        
+        // Always store ETH fallback
+        if (cgId === 'ethereum') {
+          ethPriceUsd = coin.current_price || 0;
+          ethChange24h = coin.price_change_percentage_24h || 0;
+        }
+      });
+      
+      updatePriceDisplayUI();
+      if (currentAssetTab === 'tokens') renderTokensList();
     } catch (e) {
       console.warn('CoinGecko price fetch warning:', e);
     }
@@ -274,23 +320,62 @@
   }
 
   function updateDashboardBalanceUI() {
+    const netConfig = getNetworkConfig(currentNetworkKey);
+    const nativeSymbol = netConfig.symbol || 'ETH';
+    let nativeName = 'Ethereum';
+    if (nativeSymbol === 'MATIC') nativeName = 'Polygon';
+    else if (nativeSymbol === 'BNB') nativeName = 'BNB';
+    else if (nativeSymbol === 'AVAX') nativeName = 'Avalanche';
+
     const balETH = parseFloat(accountBalances[activeAddress.toLowerCase()] || 0);
     const ethDisplay = $('dash-eth-balance');
     if (ethDisplay) ethDisplay.textContent = balETH.toFixed(4);
 
+    const balanceUnit = $('dash-balance-unit');
+    if (balanceUnit) balanceUnit.textContent = nativeSymbol;
+
     const usdDisplay = $('dash-usd-balance');
     if (usdDisplay) {
+      let totalFiatVal = 0;
       if (ethPriceUsd) {
-        const fiatVal = balETH * ethPriceUsd;
-        usdDisplay.textContent = `$${fiatVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
-      } else {
-        usdDisplay.textContent = '$0.00 USD';
+        totalFiatVal += balETH * ethPriceUsd;
       }
+      
+      const networkTokens = POPULAR_TOKENS[currentNetworkKey] || [];
+      const allTokens = [...networkTokens, ...customTokens];
+      allTokens.forEach(t => {
+        const balStr = tokenBalances[t.symbol] || '0.0000';
+        const bal = parseFloat(balStr);
+        const priceData = tokenPricesData[t.symbol.toUpperCase()];
+        if (priceData && priceData.usd && bal > 0) {
+          totalFiatVal += bal * priceData.usd;
+        }
+      });
+
+      usdDisplay.textContent = `$${totalFiatVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
     }
 
-    // Token page ETH row
+    // Token page native row
     const tokEth = $('token-eth-amount');
     if (tokEth) tokEth.textContent = balETH.toFixed(4);
+
+    const nativeNameEl = $('token-native-name');
+    if (nativeNameEl) nativeNameEl.textContent = nativeName;
+
+    const nativeSymbolEl = $('token-native-symbol');
+    if (nativeSymbolEl) nativeSymbolEl.textContent = nativeSymbol;
+
+    const nativeChangeEl = $('token-native-change');
+    if (nativeChangeEl) {
+      if (ethChange24h !== null && ethChange24h !== undefined) {
+        const isPos = ethChange24h >= 0;
+        nativeChangeEl.textContent = `${isPos ? '+' : ''}${ethChange24h.toFixed(2)}%`;
+        nativeChangeEl.className = `mm-token-change ${isPos ? 'positive' : 'negative'}`;
+      } else {
+        nativeChangeEl.textContent = '0.00%';
+        nativeChangeEl.className = 'mm-token-change neutral';
+      }
+    }
 
     const tokUsd = $('token-eth-usd');
     if (tokUsd && ethPriceUsd) {
@@ -469,6 +554,7 @@
     accounts.push(newAcc);
     localStorage.setItem('apex_accounts', JSON.stringify(accounts));
     switchActiveAccount(newAcc.address);
+    renderAccountsDrawer();
     pushNotification('account', 'Account Created', `Created ${newAcc.name}`);
     showToast(`Created ${newAcc.name}`, 'success');
   }
@@ -494,6 +580,7 @@
       accounts.push(newAcc);
       localStorage.setItem('apex_accounts', JSON.stringify(accounts));
       switchActiveAccount(newAcc.address);
+      renderAccountsDrawer();
       if (keyInput) keyInput.value = '';
       $('import-acc-modal')?.classList.add('hidden');
       pushNotification('account', 'Account Imported', `Imported ${newAcc.name}`);
@@ -581,6 +668,56 @@
     if (activePanel) activePanel.classList.add('active');
 
     if (tabName === 'tokens') renderTokensList();
+    if (tabName === 'activity') renderMiniActivity();
+  }
+
+  function renderMiniActivity() {
+    const container = $('mm-activity-list');
+    if (!container) return;
+    
+    // Clear the container
+    container.innerHTML = '';
+    
+    const accountTxs = txHistory.filter(tx => 
+      tx.accountAddress.toLowerCase() === activeAddress.toLowerCase() &&
+      tx.network === currentNetworkKey
+    );
+    
+    if (accountTxs.length === 0) {
+      container.innerHTML = `
+        <div class="mm-empty-state" id="mm-activity-empty">
+          <div class="mm-empty-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+          <p>No transactions yet</p>
+          <small>Your activity will appear here</small>
+        </div>
+      `;
+      return;
+    }
+    
+    // Show only the 5 most recent transactions in the mini view
+    const recentTxs = accountTxs.slice(0, 5);
+    
+    recentTxs.forEach(tx => {
+      const isSend = tx.type === 'send';
+      const item = document.createElement('div');
+      item.className = 'mm-activity-item';
+      item.innerHTML = `
+        <div class="mm-activity-icon ${isSend ? 'send' : 'receive'}">
+          <i class="fa-solid ${isSend ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
+        </div>
+        <div class="mm-activity-info">
+          <div class="mm-activity-type">${isSend ? 'Send' : 'Receive'}</div>
+          <div class="mm-activity-date">${new Date(tx.timestamp).toLocaleDateString()}</div>
+        </div>
+        <div class="mm-activity-amount ${isSend ? 'send' : 'receive'}">${isSend ? '-' : '+'}${tx.amount} ETH</div>
+      `;
+      
+      item.addEventListener('click', () => {
+        openTxDetailModal(tx);
+      });
+      
+      container.appendChild(item);
+    });
   }
 
   function renderTokensList() {
@@ -594,6 +731,11 @@
 
     let filtered = allTokens.filter(t => {
       if (searchQ && !t.name.toLowerCase().includes(searchQ) && !t.symbol.toLowerCase().includes(searchQ)) return false;
+      
+      const balStr = tokenBalances[t.symbol] || '0.0000';
+      const bal = parseFloat(balStr);
+      if (hideZeroBalances && bal === 0) return false;
+      
       return true;
     });
 
@@ -603,18 +745,58 @@
       return 0;
     });
 
-    filtered.forEach(tok => {
+    function generateSparklineSvg(data, isPositive) {
+      if (!data || data.length < 2) return '';
+      const min = Math.min(...data);
+      const max = Math.max(...data);
+      const range = max - min || 1;
+      
+      const width = 60;
+      const height = 20;
+      
+      const points = data.map((val, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((val - min) / range) * height;
+        return `${x},${y}`;
+      }).join(' ');
+      
+      const color = isPositive ? 'var(--mm-green)' : 'var(--mm-red)';
+      return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="margin-left: 8px; flex-shrink: 0;">
+        <polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>`;
+    }
+
+      filtered.forEach(tok => {
       const logoUrl = TOKEN_LOGOS[tok.symbol] || 'https://assets.coingecko.com/coins/images/279/small/ethereum.png';
+      const balStr = tokenBalances[tok.symbol] || '0.0000';
+      const priceData = tokenPricesData[tok.symbol.toUpperCase()];
+      let usdVal = '$0.00';
+      let changeHtml = '';
+      let sparklineHtml = '';
+      if (priceData && priceData.price) {
+        const fiatBal = parseFloat(balStr) * priceData.price;
+        usdVal = `$${fiatBal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        
+        if (priceData.change24h !== undefined) {
+          const isPos = priceData.change24h >= 0;
+          changeHtml = `<span style="font-size: 11px; color: ${isPos ? 'var(--mm-green)' : 'var(--mm-red)'}; margin-left: 6px;">${isPos ? '+' : ''}${priceData.change24h.toFixed(2)}%</span>`;
+          sparklineHtml = generateSparklineSvg(priceData.sparkline, isPos);
+        }
+      }
+
       const row = document.createElement('div');
       row.className = 'mm-token-item';
       row.innerHTML = `
         <div class="mm-token-logo"><img src="${logoUrl}" alt="${tok.symbol}" onerror="this.src='https://assets.coingecko.com/coins/images/279/small/ethereum.png'"></div>
-        <div class="mm-token-info">
-          <div class="mm-token-name">${tok.name}</div>
-          <div class="mm-token-amount">0.0000 ${tok.symbol}</div>
+        <div class="mm-token-info" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <div style="flex: 1;">
+            <div class="mm-token-name">${tok.name} ${changeHtml}</div>
+            <div class="mm-token-amount">${balStr} ${tok.symbol}</div>
+          </div>
+          ${sparklineHtml}
         </div>
         <div class="mm-token-value">
-          <div class="mm-token-usd">$0.00</div>
+          <div class="mm-token-usd">${usdVal}</div>
         </div>
       `;
       container.appendChild(row);
@@ -646,6 +828,7 @@
 
     let filtered = txHistory.filter(tx => {
       if (tx.accountAddress.toLowerCase() !== activeAddress.toLowerCase()) return false;
+      if (tx.network !== currentNetworkKey) return false;
       if (activeFilter === 'send' && tx.type !== 'send') return false;
       if (activeFilter === 'receive' && tx.type !== 'receive') return false;
       if (activeFilter === 'pending' && tx.status !== 'pending') return false;
@@ -999,7 +1182,7 @@
       `;
       item.addEventListener('click', () => {
         selectedCurrency = c.code;
-        localStorage.setItem('apex_currency', c.code);
+        saveSettings();
         const disp = $('selected-currency-display');
         if (disp) disp.textContent = c.code;
         renderCurrencyList();
@@ -1027,7 +1210,7 @@
       `;
       item.addEventListener('click', () => {
         selectedLanguage = l.code;
-        localStorage.setItem('apex_language', l.code);
+        saveSettings();
         const disp = $('selected-language-display');
         if (disp) disp.textContent = l.name;
         renderLanguageList();
@@ -1083,6 +1266,13 @@
         cancelHold();
         onSuccess();
       }, 3000);
+      fetchPrices();
+      refreshBalances();
+      if (balanceInterval) clearInterval(balanceInterval);
+      balanceInterval = setInterval(() => {
+        refreshBalances();
+        fetchPrices();
+      }, 15000);
     }
 
     function cancelHold() {
@@ -1152,20 +1342,51 @@
     document.body.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-nav-view], [data-target-view]');
       if (btn) {
-        const viewId = btn.dataset.navView || btn.dataset.target-view || btn.getAttribute('data-target-view');
+        const viewId = btn.dataset.navView || btn.getAttribute('data-target-view');
         if (viewId) showView(viewId);
       }
     });
 
     // Network select header
     $('network-select')?.addEventListener('change', (e) => {
-      setupProvider(e.target.value);
+      currentNetworkKey = e.target.value;
+      localStorage.setItem('apex_network', currentNetworkKey);
+      setupProvider(currentNetworkKey);
+      updateNetworkPillUI();
+      fetchPrices();
     });
 
     // Options dropdown
     $('btn-options-menu')?.addEventListener('click', () => {
       $('options-dropdown')?.classList.toggle('hidden');
     });
+
+    $('btn-toggle-hide-zero')?.addEventListener('click', () => {
+      hideZeroBalances = !hideZeroBalances;
+      saveSettings();
+      renderTokensList();
+      showToast(hideZeroBalances ? 'Zero balances hidden' : 'Showing all balances', 'info');
+    });
+
+    $('select-autolock-time')?.addEventListener('change', (e) => {
+      autoLockMinutes = e.target.value;
+      saveSettings();
+      showToast(`Auto-lock set to ${autoLockMinutes} minutes`, 'success');
+    });
+
+    // Accounts Drawer Setup
+    $('drawer-btn-create-acc')?.addEventListener('click', handleCreateNewHDAccount);
+    
+    $('drawer-btn-import-acc')?.addEventListener('click', () => {
+      $('import-acc-modal')?.classList.remove('hidden');
+      $('accounts-drawer')?.classList.add('hidden');
+    });
+    
+    $('btn-close-import-modal')?.addEventListener('click', () => {
+      $('import-acc-modal')?.classList.add('hidden');
+    });
+    
+    $('btn-submit-import-acc')?.addEventListener('click', handleImportAccPrivKey);
 
     document.addEventListener('click', (e) => {
       if (!e.target.closest('#btn-options-menu') && !e.target.closest('#options-dropdown')) {
@@ -1193,6 +1414,33 @@
     $('opt-import-wallet')?.addEventListener('click', () => {
       $('options-dropdown')?.classList.add('hidden');
       showView('view-import');
+    });
+
+    $('btn-submit-import-mnemonic')?.addEventListener('click', () => {
+      const phrase = $('input-import-mnemonic')?.value?.trim();
+      if (!phrase) {
+        showToast('Please enter a seed phrase', 'error');
+        return;
+      }
+      try {
+        const wallet = ethers.HDNodeWallet.fromPhrase(phrase);
+        localStorage.setItem('apex_seed_phrase', phrase);
+        localStorage.setItem('apex_active_address', wallet.address);
+        // Clear old accounts and reset to just the first account of the imported phrase
+        const accs = [{
+          id: 1,
+          name: 'Account 1',
+          address: wallet.address,
+          privateKey: wallet.privateKey,
+          isHD: true,
+          hdIndex: 0
+        }];
+        localStorage.setItem('apex_accounts', JSON.stringify(accs));
+        showToast('Wallet imported successfully!', 'success');
+        setTimeout(() => location.reload(), 1500);
+      } catch(e) {
+        showToast('Invalid seed phrase', 'error');
+      }
     });
 
     $('opt-settings')?.addEventListener('click', () => {
@@ -1326,13 +1574,53 @@
   }
 
   // ===========================================
-  // INITIALIZATION
+  // INITIALIZATION & SETTINGS
   // ===========================================
+
+  function saveSettings() {
+    const settings = {
+      selectedCurrency,
+      selectedLanguage,
+      hideZeroBalances,
+      autoLockMinutes
+    };
+    localStorage.setItem('apex_settings', JSON.stringify(settings));
+  }
+
+  function loadSettings() {
+    try {
+      const saved = localStorage.getItem('apex_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.selectedCurrency) selectedCurrency = parsed.selectedCurrency;
+        if (parsed.selectedLanguage) selectedLanguage = parsed.selectedLanguage;
+        if (typeof parsed.hideZeroBalances === 'boolean') hideZeroBalances = parsed.hideZeroBalances;
+        if (parsed.autoLockMinutes) autoLockMinutes = parsed.autoLockMinutes;
+      }
+    } catch (e) {
+      console.warn('Failed to load settings', e);
+    }
+    
+    const currencyDisp = $('selected-currency-display');
+    if (currencyDisp) currencyDisp.textContent = selectedCurrency;
+    
+    const langDisp = $('selected-language-display');
+    if (langDisp) langDisp.textContent = selectedLanguage === 'en' ? 'English' : selectedLanguage;
+    
+    const autoLockSelect = $('select-autolock-time');
+    if (autoLockSelect) autoLockSelect.value = autoLockMinutes;
+    
+    const hideZeroIcon = $('hide-zero-icon');
+    if (hideZeroIcon) {
+      hideZeroIcon.className = hideZeroBalances ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    }
+  }
 
   function init() {
     const savedTheme = localStorage.getItem('apex_theme') || 'dark';
     setTheme(savedTheme);
 
+    loadSettings();
     setupProvider(currentNetworkKey);
     loadTxHistory();
     loadSavedWallet();
@@ -1340,9 +1628,9 @@
     setupEventListeners();
 
     showView('view-home');
-    fetchEthPrice();
+    fetchPrices();
     if (priceRefreshTimer) clearInterval(priceRefreshTimer);
-    priceRefreshTimer = setInterval(fetchEthPrice, 60_000);
+    priceRefreshTimer = setInterval(fetchPrices, 60_000);
   }
 
   if (document.readyState === 'loading') {
