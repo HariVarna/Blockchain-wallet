@@ -10,14 +10,8 @@
   // ===========================================
 
   const PRESET_NETWORKS = {
-    sepolia: { key: 'sepolia', name: 'Ethereum Sepolia', rpc: 'https://rpc.sepolia.org', explorer: 'https://sepolia.etherscan.io', chainId: 11155111, symbol: 'ETH', dotColor: '#8247E5', isTestnet: true },
-    mainnet: { key: 'mainnet', name: 'Ethereum Mainnet', rpc: 'https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161', explorer: 'https://etherscan.io', chainId: 1, symbol: 'ETH', dotColor: '#28A745', isTestnet: false },
-    polygon: { key: 'polygon', name: 'Polygon Mainnet', rpc: 'https://polygon-rpc.com', explorer: 'https://polygonscan.com', chainId: 137, symbol: 'MATIC', dotColor: '#8247E5', isTestnet: false },
-    arbitrum: { key: 'arbitrum', name: 'Arbitrum One', rpc: 'https://arb1.arbitrum.io/rpc', explorer: 'https://arbiscan.io', chainId: 42161, symbol: 'ETH', dotColor: '#28A8EC', isTestnet: false },
-    optimism: { key: 'optimism', name: 'OP Mainnet', rpc: 'https://mainnet.optimism.io', explorer: 'https://optimistic.etherscan.io', chainId: 10, symbol: 'ETH', dotColor: '#FF0420', isTestnet: false },
-    base: { key: 'base', name: 'Base Mainnet', rpc: 'https://mainnet.base.org', explorer: 'https://basescan.org', chainId: 8453, symbol: 'ETH', dotColor: '#0052FF', isTestnet: false },
-    bsc: { key: 'bsc', name: 'BNB Smart Chain', rpc: 'https://bsc-dataseed.binance.org', explorer: 'https://bscscan.com', chainId: 56, symbol: 'BNB', dotColor: '#F3BA2F', isTestnet: false },
-    avalanche: { key: 'avalanche', name: 'Avalanche C-Chain', rpc: 'https://api.avax.network/ext/bc/C/rpc', explorer: 'https://snowtrace.io', chainId: 43114, symbol: 'AVAX', dotColor: '#E84142', isTestnet: false }
+    sepolia: { key: 'sepolia', name: 'Ethereum Sepolia', rpc: 'https://ethereum-sepolia-rpc.publicnode.com', explorer: 'https://sepolia.etherscan.io', chainId: 11155111, symbol: 'ETH', dotColor: '#8247E5', isTestnet: true },
+    mainnet: { key: 'mainnet', name: 'Ethereum Mainnet', rpc: 'https://ethereum-rpc.publicnode.com', explorer: 'https://etherscan.io', chainId: 1, symbol: 'ETH', dotColor: '#28A745', isTestnet: false }
   };
 
   const COINGECKO_API_KEY = 'CG-vXiLtgvzYPtYYJszgVcBcW9L';
@@ -141,6 +135,8 @@
       renderContacts();
     } else if (viewId === 'view-connected-sites') {
       renderConnectedSites();
+    } else if (viewId === 'view-send') {
+      renderSendView();
     } else if (viewId === 'view-receive') {
       renderReceiveScreen();
     } else if (viewId === 'view-settings-currency') {
@@ -188,6 +184,12 @@
     } catch (e) {
       console.warn('Fallback RPC error:', e);
       provider = new ethers.JsonRpcProvider(PRESET_NETWORKS.sepolia.rpc);
+    }
+
+    // Attach active wallet to new provider
+    const currAcc = accounts.find(a => a.address.toLowerCase() === activeAddress.toLowerCase()) || accounts[0];
+    if (currAcc && currAcc.privateKey) {
+      activeWallet = new ethers.Wallet(currAcc.privateKey, provider);
     }
     
     // Clear out old network balances to prevent flashing incorrect values
@@ -322,10 +324,7 @@
   function updateDashboardBalanceUI() {
     const netConfig = getNetworkConfig(currentNetworkKey);
     const nativeSymbol = netConfig.symbol || 'ETH';
-    let nativeName = 'Ethereum';
-    if (nativeSymbol === 'MATIC') nativeName = 'Polygon';
-    else if (nativeSymbol === 'BNB') nativeName = 'BNB';
-    else if (nativeSymbol === 'AVAX') nativeName = 'Avalanche';
+    const nativeName = 'Ethereum';
 
     const balETH = parseFloat(accountBalances[activeAddress.toLowerCase()] || 0);
     const ethDisplay = $('dash-eth-balance');
@@ -534,29 +533,41 @@
   }
 
   function handleCreateNewHDAccount() {
-    if (!seedPhrase) {
-      showToast('No seed phrase found', 'error');
-      return;
+    try {
+      let childWallet;
+      let nextIndex = 0;
+
+      if (!seedPhrase) {
+        const randomWallet = ethers.Wallet.createRandom();
+        seedPhrase = randomWallet.mnemonic.phrase;
+        localStorage.setItem('apex_seed_phrase', seedPhrase);
+        childWallet = randomWallet;
+        nextIndex = 0;
+      } else {
+        const maxHdIndex = accounts.reduce((max, a) => (a.isHD && typeof a.hdIndex === 'number' ? Math.max(max, a.hdIndex) : max), -1);
+        nextIndex = maxHdIndex + 1;
+        childWallet = ethers.HDNodeWallet.fromPhrase(seedPhrase, undefined, `m/44'/60'/0'/0/${nextIndex}`);
+      }
+
+      const newAcc = {
+        id: accounts.length + 1,
+        name: `Account ${accounts.length + 1}`,
+        address: childWallet.address,
+        privateKey: childWallet.privateKey,
+        isHD: true,
+        hdIndex: nextIndex
+      };
+
+      accounts.push(newAcc);
+      localStorage.setItem('apex_accounts', JSON.stringify(accounts));
+      switchActiveAccount(newAcc.address);
+      renderAccountsDrawer();
+      pushNotification('account', 'Account Created', `Created ${newAcc.name}`);
+      showToast(`Created ${newAcc.name}`, 'success');
+    } catch (err) {
+      console.error('Failed to create account:', err);
+      showToast('Failed to create account: ' + (err.message || err), 'error');
     }
-    const hdCount = accounts.filter(a => a.isHD).length;
-    const hdNode = ethers.HDNodeWallet.fromPhrase(seedPhrase);
-    const childWallet = hdNode.derivePath(`m/44'/60'/0'/0/${hdCount}`);
-
-    const newAcc = {
-      id: accounts.length + 1,
-      name: `Account ${hdCount + 1}`,
-      address: childWallet.address,
-      privateKey: childWallet.privateKey,
-      isHD: true,
-      hdIndex: hdCount
-    };
-
-    accounts.push(newAcc);
-    localStorage.setItem('apex_accounts', JSON.stringify(accounts));
-    switchActiveAccount(newAcc.address);
-    renderAccountsDrawer();
-    pushNotification('account', 'Account Created', `Created ${newAcc.name}`);
-    showToast(`Created ${newAcc.name}`, 'success');
   }
 
   function handleImportAccPrivKey() {
@@ -587,6 +598,60 @@
       showToast('Account imported successfully!', 'success');
     } catch (e) {
       showToast('Invalid private key format', 'error');
+    }
+  }
+
+  function handleImportAccSRP() {
+    const srpInput = $('input-import-acc-srp');
+    const phrase = srpInput?.value?.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!phrase) {
+      showToast('Please enter a 12-word recovery phrase', 'error');
+      return;
+    }
+
+    const words = phrase.split(' ');
+    if (words.length !== 12 && words.length !== 24) {
+      showToast(`Recovery phrase must have 12 words (found ${words.length})`, 'error');
+      return;
+    }
+
+    try {
+      const wallet = ethers.HDNodeWallet.fromPhrase(phrase);
+      const exists = accounts.some(a => a.address.toLowerCase() === wallet.address.toLowerCase());
+      if (exists) {
+        showToast('Account with this recovery phrase is already added', 'info');
+        switchActiveAccount(wallet.address);
+        if (srpInput) srpInput.value = '';
+        $('import-acc-modal')?.classList.add('hidden');
+        return;
+      }
+
+      // If wallet has no existing seed phrase, persist this imported phrase as main
+      if (!seedPhrase) {
+        seedPhrase = phrase;
+        localStorage.setItem('apex_seed_phrase', seedPhrase);
+      }
+
+      const newAcc = {
+        id: accounts.length + 1,
+        name: `Account ${accounts.length + 1}`,
+        address: wallet.address,
+        privateKey: wallet.privateKey,
+        isHD: true,
+        hdIndex: 0
+      };
+
+      accounts.push(newAcc);
+      localStorage.setItem('apex_accounts', JSON.stringify(accounts));
+      switchActiveAccount(newAcc.address);
+      renderAccountsDrawer();
+      if (srpInput) srpInput.value = '';
+      $('import-acc-modal')?.classList.add('hidden');
+      pushNotification('account', 'Account Imported', `Imported ${newAcc.name} via 12 phrases`);
+      showToast('Account imported successfully with 12 phrases!', 'success');
+    } catch (err) {
+      console.error('Import phrase error:', err);
+      showToast('Invalid recovery phrase. Please verify the words.', 'error');
     }
   }
 
@@ -725,25 +790,8 @@
     if (!container) return;
     container.innerHTML = '';
 
-    const searchQ = $('token-search-input')?.value?.trim().toLowerCase() || '';
     const networkTokens = POPULAR_TOKENS[currentNetworkKey] || [];
     const allTokens = [...networkTokens, ...customTokens];
-
-    let filtered = allTokens.filter(t => {
-      if (searchQ && !t.name.toLowerCase().includes(searchQ) && !t.symbol.toLowerCase().includes(searchQ)) return false;
-      
-      const balStr = tokenBalances[t.symbol] || '0.0000';
-      const bal = parseFloat(balStr);
-      if (hideZeroBalances && bal === 0) return false;
-      
-      return true;
-    });
-
-    // Sort tokens
-    filtered.sort((a, b) => {
-      if (tokenSortMethod === 'name') return a.name.localeCompare(b.name);
-      return 0;
-    });
 
     function generateSparklineSvg(data, isPositive) {
       if (!data || data.length < 2) return '';
@@ -766,7 +814,7 @@
       </svg>`;
     }
 
-      filtered.forEach(tok => {
+    allTokens.forEach(tok => {
       const logoUrl = TOKEN_LOGOS[tok.symbol] || 'https://assets.coingecko.com/coins/images/279/small/ethereum.png';
       const balStr = tokenBalances[tok.symbol] || '0.0000';
       const priceData = tokenPricesData[tok.symbol.toUpperCase()];
@@ -895,6 +943,100 @@
     modal.classList.remove('hidden');
   }
 
+  // ===========================================
+  // SEND SCREEN & TRANSACTION LOGIC
+  // ===========================================
+
+  function renderSendView() {
+    const net = getNetworkConfig(currentNetworkKey);
+    const currAcc = accounts.find(a => a.address.toLowerCase() === activeAddress.toLowerCase()) || accounts[0];
+    
+    if (currAcc) {
+      const sendFromAddr = $('send-sender-address');
+      if (sendFromAddr) sendFromAddr.textContent = `${currAcc.address.slice(0, 6)}...${currAcc.address.slice(-4)}`;
+      const sendFromName = $('send-from-name');
+      if (sendFromName) sendFromName.textContent = currAcc.name || 'Account 1';
+      const sendFromAv = $('send-from-avatar');
+      if (sendFromAv) sendFromAv.innerHTML = generateJazzicon(currAcc.address, 32);
+    }
+
+    const netDisplay = $('tx-network-display');
+    if (netDisplay) netDisplay.textContent = net.name;
+
+    const bal = accountBalances[activeAddress.toLowerCase()] || '0.0000';
+    const availEl = $('send-available-eth');
+    if (availEl) availEl.textContent = parseFloat(bal).toFixed(4);
+
+    const box = $('tx-result-box');
+    if (box) box.classList.add('hidden');
+
+    const autoList = $('send-autocomplete');
+    if (autoList) autoList.classList.add('hidden');
+
+    updateSendGasEstimation();
+  }
+
+  function updateSendGasEstimation() {
+    const amtInput = $('send-amount');
+    const amt = parseFloat(amtInput?.value || 0);
+    const estGas = 0.0001; // Approx 21,000 gas units in ETH
+    const estGasEl = $('tx-estimated-gas');
+    if (estGasEl) estGasEl.textContent = `~${estGas} ETH`;
+
+    const totalEl = $('tx-total-amount');
+    if (totalEl) {
+      const total = amt > 0 ? (amt + estGas).toFixed(4) : '0.0000';
+      totalEl.textContent = `${total} ETH`;
+    }
+  }
+
+  function updateRecipientAutocomplete() {
+    const query = $('send-recipient')?.value?.trim().toLowerCase() || '';
+    const autoList = $('send-autocomplete');
+    if (!autoList) return;
+
+    if (!query || query.length < 2) {
+      autoList.classList.add('hidden');
+      return;
+    }
+
+    const matches = [];
+    contacts.forEach(c => {
+      if (c.name.toLowerCase().includes(query) || c.address.toLowerCase().includes(query)) {
+        matches.push({ name: c.name, address: c.address, type: 'Contact' });
+      }
+    });
+    accounts.forEach(a => {
+      if (a.address.toLowerCase() !== activeAddress.toLowerCase() && 
+         (a.name.toLowerCase().includes(query) || a.address.toLowerCase().includes(query))) {
+        matches.push({ name: a.name, address: a.address, type: 'My Account' });
+      }
+    });
+
+    if (matches.length === 0) {
+      autoList.classList.add('hidden');
+      return;
+    }
+
+    autoList.innerHTML = matches.map(m => `
+      <div class="mm-autocomplete-item" data-address="${m.address}" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border-subtle, #333);">
+        <div style="font-weight:600;font-size:12px;">${m.name} <span style="font-size:10px;opacity:0.7;">(${m.type})</span></div>
+        <div class="mm-mono-sm" style="font-size:11px;opacity:0.8;">${m.address}</div>
+      </div>
+    `).join('');
+
+    autoList.classList.remove('hidden');
+
+    autoList.querySelectorAll('.mm-autocomplete-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const addr = item.dataset.address;
+        const input = $('send-recipient');
+        if (input) input.value = addr;
+        autoList.classList.add('hidden');
+      });
+    });
+  }
+
   async function handleSendTransaction(isSimulated = false) {
     const recipient = $('send-recipient')?.value?.trim();
     const amount = $('send-amount')?.value?.trim();
@@ -908,13 +1050,36 @@
       return;
     }
 
-    if (isSimulated) {
-      showToast('Simulation successful! Gas ~0.0001 ETH', 'success');
+    const availableBal = parseFloat(accountBalances[activeAddress.toLowerCase()] || 0);
+    if (!isSimulated && parseFloat(amount) > availableBal) {
+      showToast(`Insufficient balance: you have ${availableBal.toFixed(4)} ETH`, 'error');
       return;
     }
 
+    if (isSimulated) {
+      showToast('Simulation successful! Estimated gas ~0.0001 ETH', 'success');
+      return;
+    }
+
+    const currAcc = accounts.find(a => a.address.toLowerCase() === activeAddress.toLowerCase()) || accounts[0];
+    if (!currAcc || !currAcc.privateKey) {
+      showToast('No active account private key found to sign transaction', 'error');
+      return;
+    }
+
+    if (!activeWallet || activeWallet.address.toLowerCase() !== currAcc.address.toLowerCase()) {
+      activeWallet = new ethers.Wallet(currAcc.privateKey, provider);
+    }
+
+    const sendBtn = $('btn-send-tx');
+    const origHtml = sendBtn ? sendBtn.innerHTML : '';
+    if (sendBtn) {
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Broadcasting...';
+    }
+
     try {
-      showToast('Sending transaction...', 'info');
+      showToast('Broadcasting transaction...', 'info');
       const tx = await activeWallet.sendTransaction({
         to: recipient,
         value: ethers.parseEther(amount)
@@ -946,10 +1111,20 @@
       }
 
       pushNotification('tx', 'Transaction Sent', `Sent ${amount} ETH to ${recipient.slice(0, 6)}...`);
-      showToast('Transaction confirmed!', 'success');
+      showToast('Transaction confirmed on blockchain!', 'success');
       refreshBalances();
     } catch (e) {
-      showToast(e.message || 'Transaction failed', 'error');
+      console.error('Send transaction error:', e);
+      let msg = e.reason || e.shortMessage || e.message || 'Transaction failed';
+      if (msg.includes('insufficient funds')) {
+        msg = 'Insufficient funds for transfer and gas fees.';
+      }
+      showToast(msg, 'error');
+    } finally {
+      if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = origHtml || '<i class="fa-solid fa-paper-plane"></i> Confirm';
+      }
     }
   }
 
@@ -1226,15 +1401,31 @@
 
   function lockWallet() {
     isLocked = true;
-    $('lock-screen-overlay')?.classList.remove('hidden');
+    const overlay = $('lock-screen-overlay');
+    if (overlay) {
+      overlay.classList.remove('hidden');
+      const passInput = $('input-unlock-password');
+      if (passInput) {
+        passInput.value = '';
+        setTimeout(() => passInput.focus(), 150);
+      }
+    }
   }
 
   function unlockWallet() {
     const input = $('input-unlock-password');
     const entered = input?.value?.trim();
+    if (!entered) {
+      showToast('Please enter your password', 'error');
+      return;
+    }
     if (masterPassword && entered !== masterPassword) {
       showToast('Incorrect password', 'error');
       return;
+    }
+    if (!masterPassword) {
+      masterPassword = entered;
+      localStorage.setItem('apex_master_password', masterPassword);
     }
     isLocked = false;
     if (input) input.value = '';
@@ -1361,12 +1552,6 @@
       $('options-dropdown')?.classList.toggle('hidden');
     });
 
-    $('btn-toggle-hide-zero')?.addEventListener('click', () => {
-      hideZeroBalances = !hideZeroBalances;
-      saveSettings();
-      renderTokensList();
-      showToast(hideZeroBalances ? 'Zero balances hidden' : 'Showing all balances', 'info');
-    });
 
     $('select-autolock-time')?.addEventListener('change', (e) => {
       autoLockMinutes = e.target.value;
@@ -1375,6 +1560,10 @@
     });
 
     // Accounts Drawer Setup
+    $('btn-close-drawer')?.addEventListener('click', closeDrawer);
+    $('accounts-drawer')?.addEventListener('click', (e) => {
+      if (e.target.id === 'accounts-drawer') closeDrawer();
+    });
     $('drawer-btn-create-acc')?.addEventListener('click', handleCreateNewHDAccount);
     
     $('drawer-btn-import-acc')?.addEventListener('click', () => {
@@ -1386,6 +1575,22 @@
       $('import-acc-modal')?.classList.add('hidden');
     });
     
+    // Import Account Modal Tabs & Actions
+    $('tab-import-srp')?.addEventListener('click', () => {
+      $('tab-import-srp')?.classList.add('active');
+      $('tab-import-pk')?.classList.remove('active');
+      $('import-type-srp')?.classList.remove('hidden');
+      $('import-type-pk')?.classList.add('hidden');
+    });
+
+    $('tab-import-pk')?.addEventListener('click', () => {
+      $('tab-import-pk')?.classList.add('active');
+      $('tab-import-srp')?.classList.remove('active');
+      $('import-type-pk')?.classList.remove('hidden');
+      $('import-type-srp')?.classList.add('hidden');
+    });
+
+    $('btn-submit-import-acc-srp')?.addEventListener('click', handleImportAccSRP);
     $('btn-submit-import-acc')?.addEventListener('click', handleImportAccPrivKey);
 
     document.addEventListener('click', (e) => {
@@ -1551,6 +1756,59 @@
       showToast('All DApps disconnected', 'info');
     });
 
+    // Send View Action & Input Listeners
+    $('btn-send-tx')?.addEventListener('click', () => handleSendTransaction(false));
+    $('btn-simulate-tx')?.addEventListener('click', () => handleSendTransaction(true));
+
+    $('btn-send-max')?.addEventListener('click', () => {
+      const bal = parseFloat(accountBalances[activeAddress.toLowerCase()] || 0);
+      const maxSend = Math.max(0, bal - 0.0001);
+      const input = $('send-amount');
+      if (input) {
+        input.value = maxSend > 0 ? maxSend.toFixed(5) : '0';
+        updateSendGasEstimation();
+      }
+    });
+
+    $$('#view-send .mm-pct-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pct = parseFloat(btn.dataset.percent || 1);
+        const bal = parseFloat(accountBalances[activeAddress.toLowerCase()] || 0);
+        const input = $('send-amount');
+        if (input) {
+          if (pct === 1) {
+            const maxSend = Math.max(0, bal - 0.0001);
+            input.value = maxSend > 0 ? maxSend.toFixed(5) : '0';
+          } else {
+            input.value = (bal * pct).toFixed(5);
+          }
+          updateSendGasEstimation();
+        }
+      });
+    });
+
+    $('send-amount')?.addEventListener('input', updateSendGasEstimation);
+    $('send-recipient')?.addEventListener('input', updateRecipientAutocomplete);
+
+    // Swap and Bridge Handlers
+    $('btn-do-swap')?.addEventListener('click', () => {
+      const amt = $('swap-from-amount')?.value;
+      if (!amt || parseFloat(amt) <= 0) {
+        showToast('Please enter an amount to swap', 'error');
+        return;
+      }
+      showToast('Swap order executed on DEX (simulated)', 'success');
+    });
+
+    $('btn-do-bridge')?.addEventListener('click', () => {
+      const amt = $('bridge-amount')?.value;
+      if (!amt || parseFloat(amt) <= 0) {
+        showToast('Please enter an amount to bridge', 'error');
+        return;
+      }
+      showToast('Bridge transfer initiated', 'success');
+    });
+
     // Lock screen form
     $('form-unlock-wallet')?.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1563,12 +1821,27 @@
       card.addEventListener('click', () => setTheme(card.dataset.theme));
     });
 
+    // Modal close handlers
+    $('btn-close-acc-details')?.addEventListener('click', () => $('account-details-modal')?.classList.add('hidden'));
+    $('btn-close-import-token')?.addEventListener('click', () => $('import-token-modal')?.classList.add('hidden'));
+    $('btn-close-add-network')?.addEventListener('click', () => $('add-network-modal')?.classList.add('hidden'));
+    $('btn-close-tx-detail')?.addEventListener('click', () => $('tx-detail-modal')?.classList.add('hidden'));
+    $('btn-close-copy-modal')?.addEventListener('click', () => $('copy-warning-modal')?.classList.add('hidden'));
+
+    // Click backdrop to close modals
+    $$('.mm-modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.add('hidden');
+      });
+    });
+
     // Keyboard navigation (Escape closes modals)
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         $$('.mm-modal-overlay').forEach(m => m.classList.add('hidden'));
         $('accounts-drawer')?.classList.add('hidden');
         $('options-dropdown')?.classList.add('hidden');
+        $('send-autocomplete')?.classList.add('hidden');
       }
     });
   }
@@ -1631,6 +1904,9 @@
     fetchPrices();
     if (priceRefreshTimer) clearInterval(priceRefreshTimer);
     priceRefreshTimer = setInterval(fetchPrices, 60_000);
+
+    // Lock wallet on every refresh
+    lockWallet();
   }
 
   if (document.readyState === 'loading') {

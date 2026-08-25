@@ -40,12 +40,8 @@
       <div class="mm-network-pill">
         <div class="mm-network-dot" id="mm-network-dot"></div>
         <select id="network-select" class="mm-network-select">
-          <option value="mainnet">Ethereum Mainnet</option>
           <option value="sepolia">Sepolia Testnet</option>
-          <option value="polygon">Polygon</option>
-          <option value="optimism">Optimism</option>
-          <option value="arbitrum">Arbitrum</option>
-          <option value="base">Base</option>
+          <option value="mainnet">Ethereum Mainnet</option>
         </select>
         <i class="fa-solid fa-chevron-down" style="font-size: 10px; color: var(--text-secondary);"></i>
       </div>
@@ -127,20 +123,6 @@
 
         <!-- Tokens Panel -->
         <div class="mm-asset-panel active" id="asset-panel-tokens">
-          <div class="mm-tokens-toolbar">
-            <div class="mm-search-wrap">
-              <i class="fa-solid fa-magnifying-glass mm-search-icon"></i>
-              <input type="text" id="token-search-input" class="mm-search-input" placeholder="Search tokens...">
-            </div>
-            <div class="mm-tokens-toolbar-right">
-              <button class="mm-icon-btn" id="btn-token-sort" title="Sort">
-                <i class="fa-solid fa-arrow-up-wide-short"></i>
-              </button>
-              <button class="mm-icon-btn" id="btn-toggle-hide-zero" title="Hide zero balances">
-                <i class="fa-solid fa-eye" id="hide-zero-icon"></i>
-              </button>
-            </div>
-          </div>
           <div class="mm-token-list" id="token-list-container">
             <!-- ETH native token -->
             <div class="mm-token-item" id="mm-eth-token-row">
@@ -167,7 +149,6 @@
           </div>
           <div class="mm-token-footer">
             <div class="mm-network-stats-bar">
-              <span><i class="fa-solid fa-gas-pump"></i> <span id="dash-gas-price">—</span> Gwei</span>
               <span><i class="fa-solid fa-cube"></i> <span id="dash-latest-block">—</span></span>
               <span class="mm-price-badge" id="mm-eth-price-badge"><i class="fa-brands fa-ethereum"></i> <span id="mm-eth-price-live">—</span></span>
               <button class="mm-refresh-btn" id="btn-refresh-balance" title="Refresh"><i class="fa-solid fa-rotate-right"></i></button>
@@ -282,9 +263,9 @@
         </div>
         <div class="mm-view-body">
           <div class="mm-bridge-chain-row">
-            <div class="mm-bridge-chain-box"><label>From</label><select class="mm-select" id="bridge-from-chain"><option>Ethereum Sepolia</option><option>Ethereum Mainnet</option><option>Polygon</option></select></div>
+            <div class="mm-bridge-chain-box"><label>From</label><select class="mm-select" id="bridge-from-chain"><option>Ethereum Sepolia</option><option>Ethereum Mainnet</option></select></div>
             <div class="mm-bridge-arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
-            <div class="mm-bridge-chain-box"><label>To</label><select class="mm-select" id="bridge-to-chain"><option>Polygon</option><option>Arbitrum One</option><option>Optimism</option><option>Base</option></select></div>
+            <div class="mm-bridge-chain-box"><label>To</label><select class="mm-select" id="bridge-to-chain"><option>Ethereum Mainnet</option><option>Ethereum Sepolia</option></select></div>
           </div>
           <div class="mm-form-group"><label>Amount</label><div class="mm-amount-input-wrap"><input type="number" class="mm-input" placeholder="0.00" id="bridge-amount"><div class="mm-amount-currency">ETH</div></div></div>
           <div class="mm-swap-info"><i class="fa-solid fa-circle-info"></i><span>Bridging requires network fees. Assets may take 5–30 minutes.</span></div>
@@ -824,9 +805,38 @@
     <div class="mm-modal">
       <div class="mm-modal-header"><h3>Import Account</h3><button class="mm-icon-btn" id="btn-close-import-modal"><i class="fa-solid fa-xmark"></i></button></div>
       <div class="mm-modal-body">
-        <div class="mm-srp-warning" style="margin-bottom:16px;"><i class="fa-solid fa-triangle-exclamation"></i> Imported accounts are not backed by your Recovery Phrase.</div>
-        <div class="mm-form-group"><label>Private Key</label><input type="password" id="input-import-acc-privkey" class="mm-input mm-mono-input" placeholder="Paste private key 0x..." autocomplete="off"><span class="mm-hint">Your private key will be encrypted and stored locally.</span></div>
-        <button class="mm-btn mm-btn-primary full-width" id="btn-submit-import-acc">Import</button>
+        <div class="mm-modal-tabs">
+          <button type="button" class="mm-modal-tab active" id="tab-import-srp">12-Word Phrase</button>
+          <button type="button" class="mm-modal-tab" id="tab-import-pk">Private Key</button>
+        </div>
+
+        <!-- 12-Word Phrase Section -->
+        <div id="import-type-srp">
+          <div class="mm-info-box" style="margin-bottom:16px;">
+            <i class="fa-solid fa-key"></i>
+            <span>Enter your 12-word Secret Recovery Phrase separated by spaces.</span>
+          </div>
+          <div class="mm-form-group">
+            <label>12-Word Recovery Phrase</label>
+            <textarea id="input-import-acc-srp" class="mm-input mm-textarea mm-mono-input" placeholder="word1 word2 word3 ... word12" rows="3"></textarea>
+            <span class="mm-hint">Enter the 12 words in the correct order separated by single spaces.</span>
+          </div>
+          <button class="mm-btn mm-btn-primary full-width" id="btn-submit-import-acc-srp">Import Account</button>
+        </div>
+
+        <!-- Private Key Section -->
+        <div id="import-type-pk" class="hidden">
+          <div class="mm-srp-warning" style="margin-bottom:16px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Imported accounts are not backed by your main Secret Recovery Phrase.</span>
+          </div>
+          <div class="mm-form-group">
+            <label>Private Key</label>
+            <input type="password" id="input-import-acc-privkey" class="mm-input mm-mono-input" placeholder="Paste private key 0x..." autocomplete="off">
+            <span class="mm-hint">Your private key will be encrypted and stored locally.</span>
+          </div>
+          <button class="mm-btn mm-btn-primary full-width" id="btn-submit-import-acc">Import Private Key</button>
+        </div>
       </div>
     </div>
   </div>

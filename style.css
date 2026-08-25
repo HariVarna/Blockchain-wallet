@@ -2878,3 +2878,38 @@ html, body {
   60% { transform: translateY(10%); opacity: 1; }
   100% { transform: translateY(0); opacity: 1; }
 }
+
+/* Modal Tabs */
+.mm-modal-tabs {
+  display: flex;
+  background: var(--bg-2);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+}
+
+.mm-modal-tab {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.mm-modal-tab:hover {
+  color: var(--text-primary);
+}
+
+.mm-modal-tab.active {
+  background: var(--bg-card, #25282c);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}

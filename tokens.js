@@ -5,11 +5,7 @@
 
 const TOKEN_LOGOS = {
   ETH:  'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
-  WETH: 'https://assets.coingecko.com/coins/images/2518/small/weth.png',
-  USDC: 'https://assets.coingecko.com/coins/images/6319/small/usdc.png',
   USDT: 'https://assets.coingecko.com/coins/images/325/small/Tether.png',
-  DAI:  'https://assets.coingecko.com/coins/images/9956/small/4943.png',
-  LINK: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
   UNI:  'https://assets.coingecko.com/coins/images/12504/small/uniswap-uni.png',
   AAVE: 'https://assets.coingecko.com/coins/images/12645/small/AAVE.png',
   MATIC:'https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png',
@@ -28,8 +24,8 @@ const TOKEN_LOGOS = {
 };
 
 const COINGECKO_IDS = {
-  ETH: 'ethereum', WETH: 'weth', USDC: 'usd-coin', USDT: 'tether',
-  DAI: 'dai', LINK: 'chainlink', UNI: 'uniswap', AAVE: 'aave',
+  ETH: 'ethereum', USDT: 'tether',
+  UNI: 'uniswap', AAVE: 'aave',
   MATIC: 'matic-network', BNB: 'binancecoin', WBTC: 'wrapped-bitcoin',
   ARB: 'arbitrum', OP: 'optimism', LDO: 'lido-dao', MKR: 'maker',
   CRV: 'curve-dao-token', COMP: 'compound-governance-token',
@@ -38,11 +34,7 @@ const COINGECKO_IDS = {
 
 const POPULAR_TOKENS = {
   mainnet: [
-    { symbol: 'WETH',  name: 'Wrapped Ether',      decimals: 18, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
-    { symbol: 'USDC',  name: 'USD Coin',            decimals: 6,  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
     { symbol: 'USDT',  name: 'Tether USD',          decimals: 6,  address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' },
-    { symbol: 'DAI',   name: 'Dai Stablecoin',      decimals: 18, address: '0x6B175474E89094C44Da98b954EedeAC495271d0F' },
-    { symbol: 'LINK',  name: 'Chainlink',            decimals: 18, address: '0x514910771AF9Ca656af840dff83E8264EcF986CA' },
     { symbol: 'UNI',   name: 'Uniswap',             decimals: 18, address: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984' },
     { symbol: 'AAVE',  name: 'Aave',                decimals: 18, address: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9' },
     { symbol: 'WBTC',  name: 'Wrapped Bitcoin',     decimals: 8,  address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599' },
@@ -55,29 +47,7 @@ const POPULAR_TOKENS = {
     { symbol: 'BAL',   name: 'Balancer',            decimals: 18, address: '0xba100000625a3754423978a60c9317c58a424e3D' },
     { symbol: 'PEPE',  name: 'Pepe',                decimals: 18, address: '0x6982508145454Ce325dDbE47a25d4ec3d2311933' },
   ],
-  sepolia: [
-    { symbol: 'USDC',  name: 'USD Coin (Test)',      decimals: 6,  address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8' },
-    { symbol: 'LINK',  name: 'Chainlink (Test)',     decimals: 18, address: '0x779877A7B0D9E8603169DdbD7836e478b4624789' },
-    { symbol: 'DAI',   name: 'Dai (Test)',           decimals: 18, address: '0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357' },
-    { symbol: 'WETH',  name: 'Wrapped Ether (Test)', decimals: 18, address: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14' },
-  ],
-  polygon: [
-    { symbol: 'USDC',  name: 'USD Coin',            decimals: 6,  address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174' },
-    { symbol: 'USDT',  name: 'Tether USD',          decimals: 6,  address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F' },
-    { symbol: 'DAI',   name: 'Dai Stablecoin',      decimals: 18, address: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063' },
-    { symbol: 'WBTC',  name: 'Wrapped Bitcoin',     decimals: 8,  address: '0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6' },
-    { symbol: 'LINK',  name: 'Chainlink',            decimals: 18, address: '0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39' },
-    { symbol: 'AAVE',  name: 'Aave',                decimals: 18, address: '0xD6DF932A45C0f255f85145f286eA0b292B21C90B' },
-    { symbol: 'WETH',  name: 'Wrapped Ether',       decimals: 18, address: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619' },
-  ],
-  arbitrum: [
-    { symbol: 'USDC',  name: 'USD Coin',            decimals: 6,  address: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8' },
-    { symbol: 'USDT',  name: 'Tether USD',          decimals: 6,  address: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9' },
-    { symbol: 'DAI',   name: 'Dai Stablecoin',      decimals: 18, address: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1' },
-    { symbol: 'WBTC',  name: 'Wrapped Bitcoin',     decimals: 8,  address: '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f' },
-    { symbol: 'ARB',   name: 'Arbitrum',            decimals: 18, address: '0x912CE59144191C1204E64559FE8253a0e49E6548' },
-    { symbol: 'LINK',  name: 'Chainlink',            decimals: 18, address: '0xf97f4df75117a78c1A5a0DBb814Af92458539FB4' },
-  ],
+  sepolia: [],
 };
 
 const FIAT_CURRENCIES = [
