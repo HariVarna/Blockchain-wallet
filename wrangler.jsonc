@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "blockchain-wallet",
+  "compatibility_date": "2026-08-25",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": ".",
+    "exclude": [
+      "node_modules/**",
+      ".git/**",
+      "wallet creation/**",
+      "wallet.json",
+      "package*.json",
+      "wrangler.jsonc",
+      "README.md"
+    ]
+  }
+}
